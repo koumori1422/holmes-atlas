@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
+<head><!DOCTYPE html>
+<html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,7 +14,7 @@
   --ink:#1c2430; --ink-2:#232d3c;
   --parchment:#ece3cc; --parchment-2:#e0d4b3;
   --brass:#ab8347; --brass-light:#c9a562;
-  --burgundy:#7a2634; --teal:#2f5d5a; --slate:#55606e;
+  --burgundy:#7a2634; --teal:#2f5d5a; --slate:#55606e; --pastiche:#7c5980;
   --charcoal:#2b2620; --fog:#cdd5db; --line:rgba(171,131,71,0.35);
 }
 *{box-sizing:border-box;}
@@ -83,6 +85,7 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .type-badge{display:inline-block;font-size:.7rem;padding:2px 9px;border-radius:2px;color:#fff;margin-bottom:10px;}
 .badge-place{background:var(--brass);} .badge-person{background:var(--burgundy);}
 .badge-work{background:var(--teal);} .badge-term{background:var(--slate);}
+.badge-pastiche{background:var(--pastiche);}
 .panel-body h3{font-family:'Playfair Display',serif;font-weight:600;font-size:1.4rem;margin:2px 0 12px;color:var(--ink);}
 .panel-body img.entity-img{width:100%;border-radius:3px;margin-bottom:14px;border:1px solid var(--line);}
 .panel-body p{font-size:.96rem;line-height:1.75;margin:0 0 18px;}
@@ -96,6 +99,7 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:6px;vertical-align:middle;}
 .dot-place{background:var(--brass);} .dot-person{background:var(--burgundy);}
 .dot-work{background:var(--teal);} .dot-term{background:var(--slate);}
+.dot-pastiche{background:var(--pastiche);}
 .edit-btn{font-size:.85rem;background:none;border:1px solid var(--brass);color:var(--brass);padding:6px 13px;border-radius:3px;cursor:pointer;margin-right:8px;}
 .edit-btn:hover{background:var(--brass);color:#fff;}
 .map-jump-main-btn{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;background:none;border:1px solid var(--brass);color:var(--brass);padding:6px 13px;border-radius:3px;cursor:pointer;margin-bottom:14px;}
@@ -340,7 +344,7 @@ const SEED = {
     related:["holmes"]},
   "crowborough": {type:"place", name:"クロウボロ", coords:[51.0524,0.1547], image:null,
     desc:"東サセックスの町。コナン・ドイルが晩年を過ごした邸宅「ウィンドルシャム」があった地。",
-    related:["conan-doyle"]},
+    related:["conan-doyle","his-last-bow-work"]},
 
   "mycroft-holmes": {type:"person", name:"マイクロフト・ホームズ", image:null,
     desc:"シャーロックの7歳年上の兄。英国政府の機密に関わる要職にあり、ディオゲネス・クラブの創設会員。",
@@ -367,28 +371,28 @@ const SEED = {
     desc:"ローリー・R・キングのパスティーシュ・シリーズの主人公。",
     related:["sussex","beekeepers-apprentice","holmes"]},
 
-  "study-in-scarlet": {type:"work", name:"『緋色の研究』(1887)", image:null,
+  "study-in-scarlet": {type:"work", canon:true, name:"『緋色の研究』(1887)", image:null,
     desc:"ホームズとワトスンの出会いを描く正典第一作の長編。",
     related:["baker-street","st-barts","holmes","watson"]},
-  "sign-of-four": {type:"work", name:"『四つの署名』(1890)", image:null,
+  "sign-of-four": {type:"work", canon:true, name:"『四つの署名』(1890)", image:null,
     desc:"正典第二作の長編。依頼人メアリー・モースタンとの出会いを描く。",
     related:["holmes","watson","lyceum-theatre"]},
-  "musgrave-ritual": {type:"work", name:"『マスグレーヴ家の儀式』", image:null,
+  "musgrave-ritual": {type:"work", canon:true, name:"『マスグレーヴ家の儀式』", image:null,
     desc:"ホームズが探偵業を始めたばかりの若い頃の事件を回想する短編。",
     related:["holmes","montague-street"]},
-  "hound-baskervilles": {type:"work", name:"『バスカヴィル家の犬』", image:null,
+  "hound-baskervilles": {type:"work", canon:true, name:"『バスカヴィル家の犬』", image:null,
     desc:"正典屈指の人気を誇る長編。ダートムーアを舞台にした魔犬伝説の謎を解く。",
     related:["dartmoor","holmes","watson"]},
-  "final-problem": {type:"work", name:"『最後の事件』", image:null,
+  "final-problem": {type:"work", canon:true, name:"『最後の事件』", image:null,
     desc:"ホームズとモリアーティの対決を描く短編。",
     related:["reichenbach","holmes","moriarty"]},
-  "seven-percent-solution": {type:"work", name:"『シャーロック・ホームズ 心理分析』(1974)", image:null,
+  "seven-percent-solution": {type:"work", canon:false, name:"『シャーロック・ホームズ 心理分析』(1974)", image:null,
     desc:"ニコラス・メイヤーによる著名なパスティーシュ小説。",
     related:["vienna","holmes","pastiche-term"]},
-  "herlock-sholmes": {type:"work", name:"『アルセーヌ・ルパン対エルロック・ショルメス』", image:null,
+  "herlock-sholmes": {type:"work", canon:false, name:"『アルセーヌ・ルパン対エルロック・ショルメス』", image:null,
     desc:"モーリス・ルブランの怪盗ルパン・シリーズに登場する、著名なパロディ的パスティーシュ。",
     related:["paris","holmes","pastiche-term"]},
-  "beekeepers-apprentice": {type:"work", name:"『パイプの吸える椅子』", image:null,
+  "beekeepers-apprentice": {type:"work", canon:false, name:"『パイプの吸える椅子』", image:null,
     desc:"ローリー・R・キングによるパスティーシュ・シリーズ第一作。",
     related:["sussex","holmes","mary-russell"]},
 
@@ -427,8 +431,7 @@ const SEED = {
     desc:"医師が多く開業する通りとして知られ、『悪魔の足』『青いガーネット』『入院患者』など複数の事件で言及される。",
     related:["holmes","watson"]},
   "bond-street-claridges": {type:"place", name:"クラリッジス・ホテル（ボンド街周辺）", coords:[51.5118,-0.1479], image:null,
-    desc:"『最後の挨拶』『ソア橋事件』に登場する高級ホテル。近くのグロヴナー・スクェアは『三破風館』の舞台。",
-    related:["holmes"]},
+    related:["holmes","his-last-bow-work","thor-bridge-work","three-gables-work"]},
   "marble-arch-hyde-park": {type:"place", name:"ハイド・パーク（マーブル・アーチ駅周辺）", coords:[51.5131,-0.1594], image:null,
     desc:"『空き家の冒険』でホームズが言及するロンドン随一の公園。園内のサーペンタイン池も知られる。",
     related:["holmes"]},
@@ -448,34 +451,27 @@ const SEED = {
     desc:"『緋色の研究』『プライオリ学校』『白面の兵士』など複数の事件で言及される鉄道駅。近くのリトル・ジョージ街も『緋色の研究』に登場する。",
     related:["holmes","watson","study-in-scarlet"]},
   "clapham-common-greek-interpreter": {type:"place", name:"ワンズワースの原（クラパム・サウス駅周辺）", coords:[51.4618,-0.1384], image:null,
-    desc:"『ギリシャ語通訳』で、通訳のメラス氏がギリシャ語での通訳を終えたのち置き去りにされたとされる原っぱ。",
-    related:["holmes","watson"]},
+    related:["holmes","watson","greek-interpreter-work"]},
 
   "irene-adler": {type:"person", name:"アイリーン・アドラー", image:null,
     desc:"『ボヘミアの醜聞』に登場する、ホームズが“あの女性”と呼ぶ元オペラ歌手。数少ない、知略でホームズを出し抜いた人物として描かれる。",
     related:["holmes","scandal-in-bohemia","st-johns-wood-briony-lodge"]},
-  "scandal-in-bohemia": {type:"work", name:"『ボヘミアの醜聞』", image:null,
+  "scandal-in-bohemia": {type:"work", canon:true, name:"『ボヘミアの醜聞』", image:null,
     desc:"正典短編集の第一作。ボヘミア国王の依頼を受けたホームズが、アイリーン・アドラーと知恵比べを繰り広げる、シリーズ屈指の人気作。",
     related:["holmes","watson","irene-adler","st-johns-wood-briony-lodge"]},
 
   "devils-foot-cornwall": {type:"place", name:"コーンウォール（ポルドゥ湾周辺）", coords:[50.0350,-5.2650], image:null,
-    desc:"『悪魔の足』の舞台。療養のためコーンウォールを訪れていたホームズとワトスンが、隣人の怪死事件に遭遇する。荒涼としたリザード半島の風景が事件の不穏な空気を強めている。",
-    related:["holmes","watson"]},
+    related:["holmes","watson","devils-foot-work"]},
   "dancing-men-norfolk": {type:"place", name:"ノース・ウォルシャム（ノーフォーク州）", coords:[52.8200,1.3900], image:null,
-    desc:"『踊る人形』の舞台、ライディング・ソープ荘があるとされる地。暗号のように並んだ棒人形のメッセージが事件の発端となる、正典屈指の人気作。",
-    related:["holmes","watson"]},
+    related:["holmes","watson","dancing-men-work"]},
   "speckled-band-surrey": {type:"place", name:"ストーク・ダバノン（サリー州）", coords:[51.3080,-0.3660], image:null,
-    desc:"『まだらの紐』に登場する屋敷ストーク・モランのモデルとされる村。義父の毒蛇による連続殺人未遂という、正典でも屈指の恐怖度で知られる事件の舞台。",
-    related:["holmes","watson"]},
+    related:["holmes","watson","speckled-band-work"]},
   "reigate-squire": {type:"place", name:"レイゲイト（サリー州）", coords:[51.2350,-0.2050], image:null,
-    desc:"『ライゲイトの地主』の舞台となった町。療養中のホームズが、休養先で偶然事件に巻き込まれる。",
-    related:["holmes","watson"]},
+    related:["holmes","watson","reigate-squire-work"]},
   "winchester-copper-beeches": {type:"place", name:"ウィンチェスター（ハンプシャー州）", coords:[51.0632,-1.3080], image:null,
-    desc:"『ぶな屋敷』の舞台近郊の町。家庭教師として雇われた依頼人が奇妙な要求をされる、女性が主人公となる代表的な一編。",
-    related:["holmes","watson"]},
+    related:["holmes","watson","copper-beeches-work"]},
   "boscombe-valley-herefordshire": {type:"place", name:"ロス・オン・ワイ（ヘレフォードシャー州）", coords:[51.9100,-2.5800], image:null,
-    desc:"『ボスコム谷の惨劇』の舞台近郊。オーストラリア帰りの人物が絡む殺人事件を描く。この地方はドイルが『バスカヴィル家の犬』の着想を得た土地の一つともされる。",
-    related:["holmes","watson","hound-baskervilles"]},
+    related:["holmes","watson","hound-baskervilles","boscombe-valley-work"]},
   "lauriston-gardens-brixton": {type:"place", name:"ブリクストン（ローリストン・ガーデンズ）", coords:[51.4613,-0.1156], image:null,
     desc:"『緋色の研究』で、ホームズとワトスンが最初に手がけた事件の殺人現場となった通り（架空の番地）があるとされる地区。二人の探偵コンビとしての第一歩を描く記念すべき舞台。",
     related:["holmes","watson","study-in-scarlet"]},
@@ -483,10 +479,107 @@ const SEED = {
     desc:"ドイルが「バスカヴィル」という名を着想したとされる、クライロ近郊の実在する屋敷（現在はホテル）。物語の舞台自体はダートムーアに設定されているが、名前の由来はこの地とされる。",
     related:["hound-baskervilles","holmes","conan-doyle"]},
   "aldershot-crooked-man": {type:"place", name:"オルダーショット（ハンプシャー州）", coords:[51.2480,-0.7590], image:null,
-    desc:"『背の曲がった男』の舞台となった陸軍駐屯地の町。退役軍人にまつわる過去の因縁が明かされる一編。",
-    related:["holmes","watson"]},
+    related:["holmes","watson","crooked-man-work"]},
+
+  "empty-house-camden-house": {type:"place", name:"空き家（32-34番地、カムデン・ハウス跡）", coords:[51.5180,-0.1554], image:null,
+    related:["holmes","watson","baker-street","empty-house-work"]},
+  "watsons-hotel-golden-cross": {type:"place", name:"ワトスンの宿（ゴールデン・クロス・ホテル跡）", coords:[51.5084,-0.1263], image:null,
+    desc:"『緋色の研究』で、負傷除隊してロンドンに戻ったワトスンが最初に滞在したとされる、ストランドにあった安宿。傷病年金だけでは生活が苦しく、同居人を探すきっかけとなった場所。",
+    related:["watson","study-in-scarlet","holmes"]},
+  "mordecai-smiths-boatyard": {type:"place", name:"モーデカイ・スミスの船着場", coords:[51.4926,-0.1221], image:null,
+    desc:"『四つの署名』のテムズ川追跡劇の起点となった船着場。ホームズたちが追う相手が高速蒸気船オーロラ号を借り出した場所とされる。",
+    related:["sign-of-four","holmes","watson"]},
+  "diogenes-club": {type:"place", name:"ディオゲネス・クラブ（ペル・メル街）", coords:[51.5057,-0.1361], image:null,
+    related:["mycroft-holmes","holmes","pall-mall","greek-interpreter-work","final-problem"]},
+  "criterion-bar": {type:"place", name:"クライテリオン・バー", coords:[51.5098,-0.1341], image:null,
+    desc:"『緋色の研究』で、同居人を探していたワトスンが旧知のスタンフォードと再会したバー。この再会がきっかけとなり、スタンフォードの紹介でホームズと引き合わされることになる。店内には、二人の出会いにまつわる由来を記したプレートが今も掲げられている。",
+    related:["watson","holmes","study-in-scarlet","st-barts"]},
+  "cafe-royal": {type:"place", name:"カフェ・ロイヤル", coords:[51.5101,-0.1358], image:null,
+    related:["holmes","illustrious-client-work"]},
+  "simpsons-in-the-strand": {type:"place", name:"シンプソンズ・イン・ザ・ストランド", coords:[51.5108,-0.1203], image:null,
+    related:["holmes","watson","dying-detective-work","illustrious-client-work"]},
+  "pondicherry-lodge": {type:"place", name:"ポンディシェリー荘（アッパー・ノーウッド）", coords:[51.4030,-0.0881], image:null,
+    desc:"『四つの署名』で、退役軍人メジャー・ショルトーが晩年を過ごした屋敷。研究家バーナード・デービスの詳細な考証により、ロス・ロードのキルレイヴォック・ハウスがモデル地として特定されている。",
+    related:["sign-of-four","holmes","watson"]},
+  "wisteria-lodge": {type:"place", name:"ウィステリア荘（オックスショット／エシャー）", coords:[51.3603,-0.3631], image:null,
+    related:["holmes","watson","wisteria-lodge-work"]},
+  "grant-munros-norbury": {type:"place", name:"グラント・マンロー邸（ノーベリー）", coords:[51.4106,-0.1178], image:null,
+    related:["holmes","watson","yellow-face-work"]},
+  "alexander-holders-streatham": {type:"place", name:"アレグザンダー・ホールダー邸（ストレタム）", coords:[51.4354,-0.1261], image:null,
+    related:["holmes","watson","beryl-coronet-work"]},
+  "ronald-adairs-park-lane": {type:"place", name:"ロナルド・アデア邸跡（パーク・レーン）", coords:[51.5121,-0.1573], image:null,
+    related:["holmes","empty-house-camden-house","empty-house-work"]},
+  "conan-doyle-surgery-wimpole": {type:"place", name:"コナン・ドイルの診療所（アッパー・ウィンポール街）", coords:[51.5205,-0.1494], image:null,
+    desc:"コナン・ドイルが眼科医として短期間開業していた場所。患者がほとんど来なかったため、その時間を執筆に充てたという逸話で知られる。ウェストミンスター市による記念プレートが建物に掲げられている。",
+    related:["conan-doyle"]},
+  "conan-doyle-house-tennison-road": {type:"place", name:"コナン・ドイルの旧居（テニソン・ロード）", coords:[51.3951,-0.0806], image:null,
+    desc:"サウス・ノーウッドにあるコナン・ドイルのかつての自宅。1973年にブルー・プラーク（歴史的建造物に設置される記念プレート）が取り付けられている。",
+    related:["conan-doyle"]},
+  "sherlock-holmes-frieze-odeon": {type:"place", name:"オデオン座のホームズ・フリーズ（コヴェント・ガーデン）", coords:[51.5142,-0.1281], image:null,
+    desc:"1931年開館の映画館（旧セヴィル劇場）の壁面に施された装飾彫刻（フリーズ）。彫刻家ギルバート・ベイズの手によるもので、ロンドンに現存する最古のホームズ彫像（モリアーティとみられる人物も一緒に）とされている。",
+    related:["holmes","covent-garden"]},
+
+  "empty-house-work": {type:"work", canon:true, name:"『空き家の冒険』", image:null,
+    desc:"ホームズが「死」から生還したことが明かされる短編。名士ロナルド・アデアの密室殺人を解決する過程で、ライヘンバッハでの顛末や、宿敵モラン大佐との対決が語られる。",
+    related:["holmes","watson","empty-house-camden-house","ronald-adairs-park-lane","final-problem"]},
+  "yellow-face-work": {type:"work", canon:true, name:"『黄色い顔』", image:null,
+    desc:"ホームズが推理を誤り、依頼人の抱える事情に人間味あふれる真相があったことを知る珍しい一編。ホームズ自身の失敗が描かれる、シリーズの中でも異色の作品。",
+    related:["holmes","watson","grant-munros-norbury"]},
+  "beryl-coronet-work": {type:"work", canon:true, name:"『緑柱石の宝冠』", image:null,
+    desc:"銀行家が担保として預かった国宝級の宝冠が何者かに傷つけられる事件を描く短編。身内の疑惑と真犯人の意外性が読みどころ。",
+    related:["holmes","watson","alexander-holders-streatham"]},
+  "wisteria-lodge-work": {type:"work", canon:true, name:"『ウィステリア荘事件』", image:null,
+    desc:"招かれた屋敷で奇妙な晩餐に遭遇した依頼人の話から、中南米の政治的な陰謀に発展していく中編。正典の中でも異国情緒の強い一編とされる。",
+    related:["holmes","watson","wisteria-lodge"]},
+  "dying-detective-work": {type:"work", canon:true, name:"『瀕死の探偵』", image:null,
+    desc:"ホームズが謎の熱病に倒れたと聞いたワトスンが駆けつける短編。実はホームズが仕掛けた芝居であったことが明かされる、ホームズの役者ぶりが際立つ一編。",
+    related:["holmes","watson","simpsons-in-the-strand"]},
+  "illustrious-client-work": {type:"work", canon:true, name:"『高名な依頼人』", image:null,
+    desc:"身分を明かせない高貴な依頼人からの依頼で、悪名高い伯爵の正体を暴こうとする中編。ホームズ自身が暴漢に襲われる場面もある、緊迫感の強い後期の作品。",
+    related:["holmes","watson","simpsons-in-the-strand","cafe-royal"]},
+  "greek-interpreter-work": {type:"work", canon:true, name:"『ギリシャ語通訳』", image:null,
+    desc:"ホームズの兄マイクロフトが初めて登場する短編。ディオゲネス・クラブという奇妙な社交倶楽部や、兄弟の推理合戦も見どころ。",
+    related:["holmes","watson","mycroft-holmes","diogenes-club","clapham-common-greek-interpreter"]},
+  "dancing-men-work": {type:"work", canon:true, name:"『踊る人形』", image:null,
+    desc:"棒人形の形をした暗号のメッセージが事件の発端となる、正典屈指の人気作。暗号解読という知的な魅力と、悲劇的な結末を併せ持つ一編。",
+    related:["holmes","watson","dancing-men-norfolk"]},
+  "speckled-band-work": {type:"work", canon:true, name:"『まだらの紐』", image:null,
+    desc:"義父による連続殺人未遂を描く、正典の中でも屈指の恐怖度で知られる短編。密室トリックの完成度の高さでも有名。",
+    related:["holmes","watson","speckled-band-surrey"]},
+  "reigate-squire-work": {type:"work", canon:true, name:"『ライゲイトの地主』", image:null,
+    desc:"療養中のホームズが、休養先で偶然巻き込まれる殺人事件を描く短編。体調が万全でない中での推理という珍しい設定が特徴。",
+    related:["holmes","watson","reigate-squire"]},
+  "copper-beeches-work": {type:"work", canon:true, name:"『ぶな屋敷』", image:null,
+    desc:"家庭教師の職を得た若い女性が、奇妙な条件を課されることに違和感を覚えて相談に訪れる短編。ホームズが女性依頼人に寄り添う姿勢を見せる一編としても知られる。",
+    related:["holmes","watson","winchester-copper-beeches"]},
+  "boscombe-valley-work": {type:"work", canon:true, name:"『ボスコム谷の惨劇』", image:null,
+    desc:"オーストラリア帰りの人物をめぐる父子の因縁と殺人事件を描く短編。田園地帯を舞台にした正典初期の代表作の一つ。",
+    related:["holmes","watson","boscombe-valley-herefordshire"]},
+  "crooked-man-work": {type:"work", canon:true, name:"『背の曲がった男』", image:null,
+    desc:"退役軍人の家庭に起きた不可解な死をめぐり、遠い過去の因縁が明らかになる短編。インドでの出来事が影を落とす、ミステリーとしての完成度も高い一編。",
+    related:["holmes","watson","aldershot-crooked-man"]},
+  "devils-foot-work": {type:"work", canon:true, name:"『悪魔の足』", image:null,
+    desc:"療養先のコーンウォールで、ホームズとワトスンが隣人の怪死事件に巻き込まれる短編。ホームズが自ら危険な薬物を試す場面でも知られる。",
+    related:["holmes","watson","devils-foot-cornwall"]},
+  "his-last-bow-work": {type:"work", canon:true, name:"『最後の挨拶』", image:null,
+    desc:"第一次世界大戦前夜を舞台に、引退したはずのホームズがドイツのスパイ網を追う短編。正典の中では時代設定が最も新しく、ホームズとワトスンの再会も描かれる。",
+    related:["holmes","watson","bond-street-claridges","crowborough"]},
+  "thor-bridge-work": {type:"work", canon:true, name:"『ソア橋事件』", image:null,
+    desc:"橋の上で起きた銃撃事件の謎を解く短編。物理トリックの完成度の高さで知られ、ホームズ物語屈指の本格ミステリーとも評される。",
+    related:["holmes","watson","bond-street-claridges"]},
+  "three-gables-work": {type:"work", canon:true, name:"『三破風館』", image:null,
+    desc:"若くして亡くなった作家の未発表原稿をめぐる事件を描く短編。後期の正典作品の一つ。",
+    related:["holmes","watson","bond-street-claridges"]},
 };
 const TYPE_LABEL = {place:"地名", person:"人物", work:"作品", term:"用語"};
+function entityLabel(e){
+  if(e.type==='work') return e.canon ? '正典' : 'パスティーシュ';
+  return TYPE_LABEL[e.type];
+}
+function entityClass(e){
+  if(e.type==='work') return e.canon ? 'work' : 'pastiche';
+  return e.type;
+}
 const NEW_ENTITY_TYPES = ["place","person","work","term"];
 
 // ---------- 永続ストレージ（すべて自分専用＝shared:false） ----------
@@ -523,6 +616,7 @@ function buildData(){
     data[id] = {
       type: base.type, name: ov.name || base.name, coords: ov.coords || base.coords || null,
       desc: ov.desc || base.desc, image: ov.image || base.image || null,
+      canon: ov.canon !== undefined ? ov.canon : base.canon,
       related: Array.from(new Set([...(base.related||[]), ...(ov.extraRelated||[])]))
     };
   });
@@ -531,6 +625,7 @@ function buildData(){
     data[id] = {
       type: a.type, name: ov.name || a.name, coords: ov.coords || a.coords || null,
       desc: ov.desc || a.desc, image: ov.image || a.image || null,
+      canon: ov.canon !== undefined ? ov.canon : (a.canon !== undefined ? a.canon : true),
       related: Array.from(new Set([...(a.related||[]), ...(ov.extraRelated||[])]))
     };
   });
@@ -705,12 +800,21 @@ function renderJournalMarkers(){
 // ---------- 索引 ----------
 function renderIndex(){
   const indexEl = document.getElementById('index');
-  const groups = {place:[],person:[],work:[],term:[]};
-  Object.keys(DATA).forEach(id=>groups[DATA[id].type].push(id));
+  const groups = {place:[],person:[],work:[],'work-pastiche':[],term:[]};
+  Object.keys(DATA).forEach(id=>{
+    const e = DATA[id];
+    if(e.type==='work'){
+      (e.canon ? groups.work : groups['work-pastiche']).push(id);
+    } else {
+      groups[e.type].push(id);
+    }
+  });
   Object.values(groups).forEach(arr=>arr.sort((a,b)=>DATA[a].name.localeCompare(DATA[b].name,'ja')));
+  const sectionLabels = {place:'地名', person:'人物', work:'作品（正典）', 'work-pastiche':'作品（パスティーシュ）', term:'用語'};
   let html='';
-  ['place','person','work','term'].forEach(t=>{
-    html += `<div class="index-group"><h2>${TYPE_LABEL[t]}</h2>`;
+  ['place','person','work','work-pastiche','term'].forEach(t=>{
+    if(groups[t].length===0) return;
+    html += `<div class="index-group"><h2>${sectionLabels[t]}</h2>`;
     groups[t].forEach(id=>{ html += `<button class="index-item" data-id="${id}">${DATA[id].name}</button>`; });
     html += `</div>`;
   });
@@ -741,7 +845,7 @@ function showEntity(id, opts={}){
   const relatedHtml = (e.related||[]).map(rid=>{
     const r = DATA[rid]; if(!r) return '';
     const jump = (r.type==='place' && r.coords) ? `<button class="chip-map-btn" data-goto="${rid}" title="地図で見る">${pinIconSvg}</button>` : '';
-    return `<span class="chip-wrap"><button class="chip" data-id="${rid}"><span class="dot dot-${r.type}"></span>${r.name}</button>${jump}</span>`;
+    return `<span class="chip-wrap"><button class="chip" data-id="${rid}"><span class="dot dot-${entityClass(r)}"></span>${r.name}</button>${jump}</span>`;
   }).join('');
 
   const imgHtml = e.image ? `<img class="entity-img" src="${escapeAttr(e.image)}" alt="">` : '';
@@ -752,7 +856,7 @@ function showEntity(id, opts={}){
   panelContent.innerHTML = `
     <div class="trail">${trailHtml}</div>
     <div class="panel-body">
-      <span class="type-badge badge-${e.type}">${TYPE_LABEL[e.type]}</span>
+      <span class="type-badge badge-${entityClass(e)}">${entityLabel(e)}</span>
       <h3>${e.name}</h3>
       ${mapJumpHtml}
       ${imgHtml}
@@ -839,7 +943,7 @@ overlay.addEventListener('click', ev=>{ if(ev.target===overlay) closeModal(); })
 
 function relatedChecklist(excludeId, preselected=[]){
   const ids = Object.keys(DATA).filter(id=>id!==excludeId).sort((a,b)=>DATA[a].name.localeCompare(DATA[b].name,'ja'));
-  return ids.map(id=>`<label><input type="checkbox" value="${id}" ${preselected.includes(id)?'checked':''}> <span class="dot dot-${DATA[id].type}"></span>${DATA[id].name}</label>`).join('');
+  return ids.map(id=>`<label><input type="checkbox" value="${id}" ${preselected.includes(id)?'checked':''}> <span class="dot dot-${entityClass(DATA[id])}"></span>${DATA[id].name}</label>`).join('');
 }
 
 function openEntityModal(prefill){
@@ -856,6 +960,10 @@ function openEntityModal(prefill){
       <div class="geo-results" id="f-geo-results"></div>
       <div class="latlng-row"><input type="text" id="f-lat" placeholder="緯度" value="${prefill?prefill.lat.toFixed(4):''}"><input type="text" id="f-lng" placeholder="経度" value="${prefill?prefill.lng.toFixed(4):''}"></div>
     </div>
+    <div class="field" id="f-canon-field" style="display:none;">
+      <label>正典 / パスティーシュ</label>
+      <select id="f-canon"><option value="true">正典（コナン・ドイルの原作）</option><option value="false">パスティーシュ（二次創作）</option></select>
+    </div>
     <div class="field"><label>説明文</label><textarea id="f-desc"></textarea></div>
     <div class="field"><label>画像（任意）</label>
       <input type="file" class="file-input" id="f-image-file" accept="image/*">
@@ -867,7 +975,11 @@ function openEntityModal(prefill){
   overlay.classList.add('open');
   const typeSelect = document.getElementById('f-type');
   const locField = document.getElementById('f-location-field');
-  function sync(){ locField.style.display = typeSelect.value==='place' ? 'block':'none'; }
+  const canonField = document.getElementById('f-canon-field');
+  function sync(){
+    locField.style.display = typeSelect.value==='place' ? 'block':'none';
+    canonField.style.display = typeSelect.value==='work' ? 'block':'none';
+  }
   typeSelect.addEventListener('change', sync);
   if(prefill) typeSelect.value='place';
   sync();
@@ -901,8 +1013,9 @@ function openEntityModal(prefill){
       if(!isNaN(lat) && !isNaN(lng)) coords=[lat,lng];
     }
     const related = Array.from(modalBody.querySelectorAll('.checklist input:checked')).map(cb=>cb.value);
+    const canon = type==='work' ? (document.getElementById('f-canon').value === 'true') : undefined;
     const newId = 'u-'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-    additions[newId] = {type, name, desc, image: uploadedImageData || document.getElementById('f-image').value.trim() || null, coords, related};
+    additions[newId] = {type, name, desc, image: uploadedImageData || document.getElementById('f-image').value.trim() || null, coords, canon, related};
     await safeSet('p-additions', additions);
     related.forEach(relId=>{
       overrides[relId] = overrides[relId] || {};
@@ -1155,7 +1268,7 @@ function renderSearchResults(localIds, externalResults){
   let html='';
   if(localIds.length){
     html += `<div class="map-search-section">アトラス内の項目</div>`;
-    html += localIds.map(id=>`<button type="button" class="map-search-item" data-local="${id}"><span class="dot dot-${DATA[id].type}"></span>${escapeHtml(DATA[id].name)}<span class="msi-sub">${TYPE_LABEL[DATA[id].type]}</span></button>`).join('');
+    html += localIds.map(id=>`<button type="button" class="map-search-item" data-local="${id}"><span class="dot dot-${entityClass(DATA[id])}"></span>${escapeHtml(DATA[id].name)}<span class="msi-sub">${entityLabel(DATA[id])}</span></button>`).join('');
   }
   if(externalResults!==null){
     html += `<div class="map-search-section">地図上の候補地</div>`;
