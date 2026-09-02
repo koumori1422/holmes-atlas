@@ -938,7 +938,7 @@ function isInUK(coords){
   return lat>=49.5 && lat<=61 && lng>=-8.7 && lng<=2;
 }
 
-function readAndCompressImage(file, maxDim=800, quality=0.72){
+function compressImageToBlob(file, maxDim=800, quality=0.72){
   return new Promise((resolve,reject)=>{
     if(!file.type.startsWith('image/')){ reject(new Error('not image')); return; }
     const reader = new FileReader();
@@ -954,12 +954,23 @@ function readAndCompressImage(file, maxDim=800, quality=0.72){
         const canvas = document.createElement('canvas');
         canvas.width=w; canvas.height=h;
         canvas.getContext('2d').drawImage(img,0,0,w,h);
-        resolve(canvas.toDataURL('image/jpeg', quality));
+        canvas.toBlob(blob=>{
+          if(blob) resolve(blob); else reject(new Error('blob failed'));
+        }, 'image/jpeg', quality);
       };
       img.src = reader.result;
     };
     reader.readAsDataURL(file);
   });
+}
+const STORAGE_BUCKET = 'atlas-photos';
+async function uploadImageToStorage(file){
+  const blob = await compressImageToBlob(file);
+  const path = `uploads/${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
+  const { error } = await supabaseClient.storage.from(STORAGE_BUCKET).upload(path, blob, {contentType:'image/jpeg', upsert:false});
+  if(error) throw error;
+  const { data } = supabaseClient.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
 }
 function wireImageUpload(fileInputId, previewId, onResult){
   const fileInput = document.getElementById(fileInputId);
@@ -967,13 +978,14 @@ function wireImageUpload(fileInputId, previewId, onResult){
   fileInput.addEventListener('change', async ()=>{
     const file = fileInput.files[0];
     if(!file) return;
-    previewEl.innerHTML = '<div class="hint">画像を処理中…</div>';
+    previewEl.innerHTML = '<div class="hint">画像をアップロード中…</div>';
     try{
-      const dataUrl = await readAndCompressImage(file);
-      previewEl.innerHTML = `<img src="${dataUrl}" alt="">`;
-      onResult(dataUrl);
+      const url = await uploadImageToStorage(file);
+      previewEl.innerHTML = `<img src="${url}" alt="">`;
+      onResult(url);
     }catch(e){
-      previewEl.innerHTML = '<div class="hint">画像の読み込みに失敗しました。</div>';
+      console.error(e);
+      previewEl.innerHTML = '<div class="hint">アップロードに失敗しました。Supabase Storageの設定をご確認ください。</div>';
       onResult(null);
     }
   });
