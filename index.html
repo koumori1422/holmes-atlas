@@ -938,13 +938,27 @@ async function geocodeSearchOnce(query, lang){
     }).filter(r=>r.lat!==null);
   }catch(e){ return null; }
 }
+async function nominatimSearchFallback(query){
+  try{
+    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=6&accept-language=ja&q=' + encodeURIComponent(query);
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('failed');
+    const data = await res.json();
+    return data.map(d=>({lat: parseFloat(d.lat), lon: parseFloat(d.lon), display_name: d.display_name, placeType: [d.type, d.class].filter(Boolean)}));
+  }catch(e){ return null; }
+}
 async function geocodeSearch(query){
   const jaResults = await geocodeSearchOnce(query, 'ja');
-  if(jaResults === null) return null; // 通信自体が失敗
-  if(jaResults.length > 0) return jaResults;
+  if(jaResults && jaResults.length > 0) return jaResults;
   // 日本語優先で見つからなければ、言語指定なし（英語表記優先）で再検索
   const fallback = await geocodeSearchOnce(query, null);
-  return fallback === null ? jaResults : fallback;
+  if(fallback && fallback.length > 0) return fallback;
+  // それでも見つからなければ、OpenStreetMap本家の検索エンジンも試す
+  const nominatim = await nominatimSearchFallback(query);
+  if(nominatim && nominatim.length > 0) return nominatim;
+  // 全部が通信失敗なら null、どれかが「0件」なら空配列を返す
+  if(jaResults === null && fallback === null && nominatim === null) return null;
+  return [];
 }
 
 // ---------- 地図 ----------
