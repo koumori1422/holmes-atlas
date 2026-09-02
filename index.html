@@ -87,6 +87,8 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .nearby-item:hover{background:#f7ecd0;}
 .nearby-item .ni-dist{font-size:.72rem;opacity:.6;white-space:nowrap;margin-left:8px;}
 .leaflet-holmes-icon{background:var(--brass);border:2px solid var(--parchment);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.5);}
+.holmes-cluster-icon{background:transparent;}
+.cluster-icon-inner{width:34px;height:34px;border-radius:50%;background:var(--brass);border:2px solid var(--parchment);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Crimson Pro',serif;font-weight:700;font-size:.92rem;box-shadow:0 1px 4px rgba(0,0,0,.5);}
 .leaflet-holmes-icon svg{width:14px;height:14px;}
 .leaflet-journal-icon{background:var(--teal);border:2px solid var(--parchment);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.5);}
 .leaflet-journal-icon svg{width:13px;height:13px;}
@@ -1122,7 +1124,26 @@ const markerClusterGroup = L.markerClusterGroup({
   maxClusterRadius: 55,
   disableClusteringAtZoom: 17,
   spiderfyOnMaxZoom: true,
-  showCoverageOnHover: false
+  showCoverageOnHover: false,
+  iconCreateFunction: function(cluster){
+    const children = cluster.getAllChildMarkers();
+    const count = children.length;
+    const firstName = (children[0] && children[0].entityName) || '';
+    const labelText = count > 1 ? `${firstName} 他${count-1}件` : firstName;
+    if(!cluster._holmesWired){
+      cluster.bindTooltip(labelText, {direction:'right', offset:[19,0], permanent:true, className:'place-label'});
+      cluster.on('mouseover', ()=>{ cluster.getTooltip()?.getElement()?.classList.add('force-show'); });
+      cluster.on('mouseout', ()=>{ cluster.getTooltip()?.getElement()?.classList.remove('force-show'); });
+      cluster._holmesWired = true;
+    } else {
+      cluster.setTooltipContent(labelText);
+    }
+    return L.divIcon({
+      html: `<div class="cluster-icon-inner">${count}</div>`,
+      className: 'holmes-cluster-icon',
+      iconSize: L.point(34, 34)
+    });
+  }
 }).addTo(map);
 function renderMarkers(){
   markerClusterGroup.clearLayers();
@@ -1131,6 +1152,7 @@ function renderMarkers(){
     const e = DATA[id];
     if(e.type==='place' && e.coords){
       const m = L.marker(e.coords,{icon:makeIcon()});
+      m.entityName = e.name;
       m.on('click', ()=>showEntity(id));
       if(isInUK(e.coords)){
         m.bindTooltip(e.name,{direction:'right',offset:[10,0],permanent:true,className:'place-label'});
