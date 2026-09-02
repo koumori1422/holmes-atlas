@@ -1154,6 +1154,17 @@ const markerClusterGroup = L.markerClusterGroup({
     });
   }
 }).addTo(map);
+function labelDirectionFor(id){
+  const dirs = [
+    {direction:'right', offset:[10,0]},
+    {direction:'left', offset:[-10,0]},
+    {direction:'top', offset:[0,-12]},
+    {direction:'bottom', offset:[0,12]}
+  ];
+  let hash = 0;
+  for(let i=0;i<id.length;i++){ hash = (hash*31 + id.charCodeAt(i)) >>> 0; }
+  return dirs[hash % dirs.length];
+}
 function renderMarkers(){
   markerClusterGroup.clearLayers();
   Object.values(markers).forEach(m=>{ if(map.hasLayer(m)) map.removeLayer(m); });
@@ -1168,7 +1179,8 @@ function renderMarkers(){
       if(isSpecial){
         m.bindTooltip(e.name,{direction:'right',offset:[12,0],permanent:true,className:'place-label-special'});
       } else if(isInUK(e.coords)){
-        m.bindTooltip(e.name,{direction:'right',offset:[10,0],permanent:true,className:'place-label'});
+        const ld = labelDirectionFor(id);
+        m.bindTooltip(e.name,{direction:ld.direction,offset:ld.offset,permanent:true,className:'place-label'});
         m.on('mouseover', ()=>{ m.getTooltip()?.getElement()?.classList.add('force-show'); });
         m.on('mouseout', ()=>{ m.getTooltip()?.getElement()?.classList.remove('force-show'); });
       }
