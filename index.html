@@ -46,6 +46,7 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .index-link-desc{display:block;font-size:.72rem;opacity:.6;margin-top:2px;}
 .alias-list-item{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 16px;font-size:.82rem;color:var(--fog);}
 .alias-list-empty{padding:8px 16px;font-size:.78rem;opacity:.55;font-style:italic;}
+.fav-subheader{padding:8px 16px 4px;font-size:.7rem;color:var(--brass-light);font-weight:600;}
 .alias-add-standalone-btn{display:block;width:calc(100% - 24px);margin:4px 12px 8px;font-size:.78rem;background:var(--teal);border:none;color:#fff;padding:6px 0;border-radius:3px;cursor:pointer;}
 .alias-delete-btn{background:none;border:1px solid var(--line);color:var(--fog);width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:.78rem;flex:none;line-height:1;padding:0;}
 .alias-delete-btn:hover{border-color:var(--burgundy);color:var(--burgundy);}
@@ -1248,16 +1249,24 @@ function renderIndex(){
   const sectionLabels = {place:'地名', person:'人物', work:'作品（正典）', 'work-pastiche':'作品（パスティーシュ）', term:'用語', links:'関連サイト'};
   let html='';
 
-  // お気に入り
-  const favIds = groups.place.filter(id=>personalNotes[id] && personalNotes[id].favorite);
+  // お気に入り（ジャンル別）
   const favOpen = indexOpenGroups.has('favorites');
+  const favByType = {place:[], person:[], work:[], 'work-pastiche':[], term:[]};
+  ['place','person','work','work-pastiche','term'].forEach(t=>{
+    favByType[t] = groups[t].filter(id=>personalNotes[id] && personalNotes[id].favorite);
+  });
+  const favTotal = Object.values(favByType).reduce((a,arr)=>a+arr.length, 0);
   html += `<div class="index-group">
-    <button class="index-group-header" data-group="favorites"><span class="igh-arrow">${favOpen?'▾':'▸'}</span>★ お気に入り<span class="igh-count">${favIds.length}</span></button>
+    <button class="index-group-header" data-group="favorites"><span class="igh-arrow">${favOpen?'▾':'▸'}</span>★ お気に入り<span class="igh-count">${favTotal}</span></button>
     <div class="index-group-items" style="display:${favOpen?'block':'none'}">`;
-  if(favIds.length===0){
-    html += `<div class="alias-list-empty">まだありません。地名を開いて☆お気に入りボタンで登録できます。</div>`;
+  if(favTotal===0){
+    html += `<div class="alias-list-empty">まだありません。項目を開いて☆お気に入りボタンで登録できます。</div>`;
   } else {
-    favIds.forEach(id=>{ html += `<button class="index-item" data-id="${id}">${DATA[id].name}</button>`; });
+    ['place','person','work','work-pastiche','term'].forEach(t=>{
+      if(favByType[t].length===0) return;
+      html += `<div class="fav-subheader">${sectionLabels[t]}</div>`;
+      favByType[t].forEach(id=>{ html += `<button class="index-item" data-id="${id}">${DATA[id].name}</button>`; });
+    });
   }
   html += `</div></div>`;
 
@@ -1378,9 +1387,7 @@ function showEntity(id, opts={}){
   const noteHtml = renderNoteSection(id);
   const journalHtml = e.type==='place' ? renderEntityJournalSection(id) : '';
   const isFav = !!(personalNotes[id] && personalNotes[id].favorite);
-  const favBtnHtml = e.type==='place'
-    ? `<button class="fav-toggle-btn ${isFav?'active':''}" id="favToggleBtn">${isFav?'★':'☆'} お気に入り</button>`
-    : '';
+  const favBtnHtml = `<button class="fav-toggle-btn ${isFav?'active':''}" id="favToggleBtn">${isFav?'★':'☆'} お気に入り</button>`;
 
   panelContent.innerHTML = `
     <div class="trail">${trailHtml}</div>
