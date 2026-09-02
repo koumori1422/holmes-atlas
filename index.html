@@ -112,6 +112,9 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .panel-close:hover{opacity:1;}
 .panel-body{padding:6px 24px 30px;}
 .type-badge{display:inline-block;font-size:.7rem;padding:2px 9px;border-radius:2px;color:#fff;margin-bottom:10px;}
+.fav-toggle-btn{float:right;background:none;border:1px solid var(--line);color:var(--slate);font-size:.8rem;padding:3px 10px;border-radius:12px;cursor:pointer;margin-bottom:10px;}
+.fav-toggle-btn.active{background:var(--brass);border-color:var(--brass);color:#fff;}
+.fav-toggle-btn:hover{border-color:var(--brass);}
 .badge-place{background:var(--brass);} .badge-person{background:var(--burgundy);}
 .badge-work{background:var(--teal);} .badge-term{background:var(--slate);}
 .badge-pastiche{background:var(--pastiche);}
@@ -1244,6 +1247,20 @@ function renderIndex(){
   Object.values(groups).forEach(arr=>arr.sort((a,b)=>DATA[a].name.localeCompare(DATA[b].name,'ja')));
   const sectionLabels = {place:'地名', person:'人物', work:'作品（正典）', 'work-pastiche':'作品（パスティーシュ）', term:'用語', links:'関連サイト'};
   let html='';
+
+  // お気に入り
+  const favIds = groups.place.filter(id=>personalNotes[id] && personalNotes[id].favorite);
+  const favOpen = indexOpenGroups.has('favorites');
+  html += `<div class="index-group">
+    <button class="index-group-header" data-group="favorites"><span class="igh-arrow">${favOpen?'▾':'▸'}</span>★ お気に入り<span class="igh-count">${favIds.length}</span></button>
+    <div class="index-group-items" style="display:${favOpen?'block':'none'}">`;
+  if(favIds.length===0){
+    html += `<div class="alias-list-empty">まだありません。地名を開いて☆お気に入りボタンで登録できます。</div>`;
+  } else {
+    favIds.forEach(id=>{ html += `<button class="index-item" data-id="${id}">${DATA[id].name}</button>`; });
+  }
+  html += `</div></div>`;
+
   ['place','person','work','work-pastiche','term'].forEach(t=>{
     if(groups[t].length===0) return;
     const open = indexOpenGroups.has(t);
@@ -1360,11 +1377,16 @@ function showEntity(id, opts={}){
     : '';
   const noteHtml = renderNoteSection(id);
   const journalHtml = e.type==='place' ? renderEntityJournalSection(id) : '';
+  const isFav = !!(personalNotes[id] && personalNotes[id].favorite);
+  const favBtnHtml = e.type==='place'
+    ? `<button class="fav-toggle-btn ${isFav?'active':''}" id="favToggleBtn">${isFav?'★':'☆'} お気に入り</button>`
+    : '';
 
   panelContent.innerHTML = `
     <div class="trail">${trailHtml}</div>
     <div class="panel-body">
       <span class="type-badge badge-${entityClass(e)}">${entityLabel(e)}</span>
+      ${favBtnHtml}
       <h3>${e.name}</h3>
       ${mapJumpHtml}
       ${imgHtml}
@@ -1390,6 +1412,13 @@ function showEntity(id, opts={}){
   });
   document.getElementById('mapJumpBtn')?.addEventListener('click', ()=>goToMap(id));
   document.getElementById('editBtn').addEventListener('click', ()=>openEditModal(id));
+  document.getElementById('favToggleBtn')?.addEventListener('click', async ()=>{
+    personalNotes[id] = personalNotes[id] || {};
+    personalNotes[id].favorite = !personalNotes[id].favorite;
+    await safeSet('p-notes', personalNotes);
+    showEntity(id, {fromTrail:true});
+    renderIndex();
+  });
   document.getElementById('addPhotoBtn')?.addEventListener('click', ()=>openPhotoModal(id));
   panelContent.querySelectorAll('[data-del-photo]').forEach(btn=>{
     btn.addEventListener('click', ()=>deletePhoto(btn.dataset.photoEntity, btn.dataset.delPhoto));
