@@ -90,6 +90,10 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .holmes-cluster-icon{background:transparent;}
 .cluster-icon-inner{width:34px;height:34px;border-radius:50%;background:var(--brass);border:2px solid var(--parchment);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Crimson Pro',serif;font-weight:700;font-size:.92rem;box-shadow:0 1px 4px rgba(0,0,0,.5);}
 .leaflet-holmes-icon svg{width:14px;height:14px;}
+.leaflet-holmes-special-icon{background:var(--burgundy);border:3px solid var(--brass-light);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 4px rgba(171,131,71,.35),0 2px 8px rgba(0,0,0,.6);}
+.leaflet-holmes-special-icon svg{width:19px;height:19px;}
+.place-label-special{background:var(--burgundy)!important;color:#fff!important;border:2px solid var(--brass-light)!important;font-family:'Crimson Pro',serif;font-weight:700!important;font-size:.82rem!important;padding:4px 10px!important;border-radius:2px;box-shadow:0 2px 8px rgba(0,0,0,.5)!important;}
+.place-label-special::before{border-top-color:var(--burgundy)!important;}
 .leaflet-journal-icon{background:var(--teal);border:2px solid var(--parchment);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.5);}
 .leaflet-journal-icon svg{width:13px;height:13px;}
 .place-label{background:rgba(28,36,48,.88)!important;color:var(--parchment)!important;border:1px solid var(--brass)!important;font-family:'Crimson Pro',serif;font-size:.72rem!important;padding:2px 7px!important;border-radius:2px;box-shadow:none!important;}
@@ -1114,6 +1118,11 @@ function makeIcon(){
     html:'<svg viewBox="0 0 24 24" fill="none" stroke="#ece3cc" stroke-width="2.2"><circle cx="10" cy="10" r="6"/><line x1="15" y1="15" x2="21" y2="21"/></svg>',
     iconSize:[26,26], iconAnchor:[13,13]});
 }
+function makeSpecialIcon(){
+  return L.divIcon({className:'leaflet-holmes-special-icon',
+    html:'<svg viewBox="0 0 24 24" fill="none" stroke="#ece3cc" stroke-width="2.2"><circle cx="10" cy="10" r="6"/><line x1="15" y1="15" x2="21" y2="21"/></svg>',
+    iconSize:[36,36], iconAnchor:[18,18]});
+}
 function makeJournalIcon(){
   return L.divIcon({className:'leaflet-journal-icon',
     html:'<svg viewBox="0 0 24 24" fill="none" stroke="#ece3cc" stroke-width="2.2"><rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="12" cy="13.3" r="3"/></svg>',
@@ -1147,21 +1156,26 @@ const markerClusterGroup = L.markerClusterGroup({
 }).addTo(map);
 function renderMarkers(){
   markerClusterGroup.clearLayers();
+  Object.values(markers).forEach(m=>{ if(map.hasLayer(m)) map.removeLayer(m); });
   markers = {};
   Object.keys(DATA).forEach(id=>{
     const e = DATA[id];
     if(e.type==='place' && e.coords){
-      const m = L.marker(e.coords,{icon:makeIcon()});
+      const isSpecial = id === 'baker-street';
+      const m = L.marker(e.coords,{icon: isSpecial ? makeSpecialIcon() : makeIcon(), zIndexOffset: isSpecial ? 2000 : 0});
       m.entityName = e.name;
       m.on('click', ()=>showEntity(id));
-      if(isInUK(e.coords)){
+      if(isSpecial){
+        m.bindTooltip(e.name,{direction:'right',offset:[12,0],permanent:true,className:'place-label-special'});
+      } else if(isInUK(e.coords)){
         m.bindTooltip(e.name,{direction:'right',offset:[10,0],permanent:true,className:'place-label'});
         m.on('mouseover', ()=>{ m.getTooltip()?.getElement()?.classList.add('force-show'); });
         m.on('mouseout', ()=>{ m.getTooltip()?.getElement()?.classList.remove('force-show'); });
       }
       else m.bindTooltip(e.name,{direction:'top',offset:[0,-10]});
       markers[id]=m;
-      markerClusterGroup.addLayer(m);
+      if(isSpecial) m.addTo(map);
+      else markerClusterGroup.addLayer(m);
     }
   });
 }
