@@ -1319,7 +1319,7 @@ function showEntity(id, opts={}){
   const gmapsIconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>';
   const mapJumpHtml = (e.type==='place' && e.coords)
     ? `<button class="map-jump-main-btn" id="mapJumpBtn">${pinIconSvg} 地図で見る</button>
-       <a class="map-jump-main-btn" href="https://www.google.com/maps/search/?api=1&query=${e.coords[0]},${e.coords[1]}" target="_blank" rel="noopener noreferrer">${gmapsIconSvg} Googleマップ（営業時間など）</a>`
+       <a class="map-jump-main-btn" href="https://www.google.com/maps/search/${encodeURIComponent(e.name)}/@${e.coords[0]},${e.coords[1]},17z" target="_blank" rel="noopener noreferrer">${gmapsIconSvg} Googleマップ（営業時間など）</a>`
     : '';
   const noteHtml = renderNoteSection(id);
   const journalHtml = e.type==='place' ? renderEntityJournalSection(id) : '';
