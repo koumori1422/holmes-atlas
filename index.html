@@ -927,7 +927,7 @@ async function geocodeSearch(query){
 }
 
 // ---------- 地図 ----------
-const map = L.map('map', {zoomControl:true, scrollWheelZoom:false}).setView([48,5], 3);
+const map = L.map('map', {zoomControl:true, scrollWheelZoom:false}).setView([51.5074,-0.1278], 11);
 const mapEl = document.getElementById('map');
 let mapActive = false;
 map.scrollWheelZoom.disable();
@@ -1015,9 +1015,9 @@ function renderMarkers(){
 }
 map.on('zoomend', ()=>{
   const el = map.getContainer();
-  if(map.getZoom()<10) el.classList.add('hide-place-labels'); else el.classList.remove('hide-place-labels');
+  if(map.getZoom()<14) el.classList.add('hide-place-labels'); else el.classList.remove('hide-place-labels');
 });
-if(map.getZoom()<10) map.getContainer().classList.add('hide-place-labels');
+if(map.getZoom()<14) map.getContainer().classList.add('hide-place-labels');
 
 let journalMarkers = [];
 function renderJournalMarkers(){
