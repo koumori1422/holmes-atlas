@@ -57,7 +57,10 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .map-search{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:600;width:min(380px,82%);}
 .map-search-row{display:flex;gap:6px;box-shadow:0 2px 8px rgba(0,0,0,.25);border-radius:3px;}
 .map-search-row input{flex:1;padding:9px 12px;border:1px solid var(--line);border-radius:3px 0 0 3px;font-size:.9rem;background:#fff;color:var(--charcoal);}
-.map-search-row button{background:var(--brass);border:none;color:#fff;padding:0 16px;border-radius:0 3px 3px 0;cursor:pointer;font-size:.85rem;}
+.map-search-row button{background:var(--brass);border:none;color:#fff;padding:0 16px;border-radius:0;cursor:pointer;font-size:.85rem;}
+.map-search-row button:last-child{border-radius:0 3px 3px 0;}
+.map-search-clear-btn{background:#fff!important;color:var(--slate)!important;border-left:1px solid var(--line)!important;width:32px;padding:0!important;font-size:1.1rem!important;}
+.map-search-clear-btn:hover{color:var(--burgundy)!important;}
 .map-search-results{margin-top:6px;background:#fff;border:1px solid var(--line);border-radius:4px;overflow:hidden;display:none;max-height:300px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.2);}
 .map-search-results.show{display:block;}
 .map-search-item{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:#fff;border:none;border-bottom:1px solid var(--line);padding:9px 12px;font-size:.86rem;color:var(--charcoal);cursor:pointer;}
@@ -192,6 +195,11 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .timeline-note{font-size:.85rem;opacity:.7;margin-bottom:18px;}
 
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink-2);color:var(--parchment);padding:10px 20px;border-radius:4px;border:1px solid var(--brass);font-size:.88rem;z-index:3000;opacity:0;pointer-events:none;transition:opacity .25s ease;}
+.lightbox-overlay{position:fixed;inset:0;background:rgba(10,13,18,.92);display:none;align-items:center;justify-content:center;z-index:5000;padding:30px;cursor:zoom-out;}
+.lightbox-overlay.open{display:flex;}
+.lightbox-overlay img{max-width:100%;max-height:100%;object-fit:contain;border-radius:3px;box-shadow:0 8px 30px rgba(0,0,0,.5);}
+.lightbox-close{position:absolute;top:16px;right:20px;background:none;border:none;color:#fff;font-size:2rem;cursor:pointer;line-height:1;}
+.photo-block img,.entity-img,.journal-card img{cursor:zoom-in;}
 .toast.show{opacity:1;}
 
 @media (max-width:760px){
@@ -233,7 +241,8 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
     <div class="map-status" id="mapStatus">地図タイルを読み込み中…</div>
     <div class="map-search" id="mapSearch">
       <div class="map-search-row">
-        <input type="text" id="mapSearchInput" placeholder="地名やスポット名で検索">
+        <input type="text" id="mapSearchInput" placeholder="地名やスポット名で検索" autocomplete="off">
+        <button type="button" class="map-search-clear-btn" id="mapSearchClearBtn" title="クリア" style="display:none;">×</button>
         <button type="button" id="mapSearchBtn">検索</button>
       </div>
       <div class="map-search-results" id="mapSearchResults"></div>
@@ -255,6 +264,10 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
   <div class="modal" id="modalBody"></div>
 </div>
 <div class="toast" id="toast"></div>
+<div class="lightbox-overlay" id="lightboxOverlay">
+  <img id="lightboxImg" src="" alt="">
+  <button class="lightbox-close" id="lightboxClose">×</button>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -862,6 +875,23 @@ function showToast(msg){
   t.textContent = msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), 2600);
 }
+// ---------- 画像の拡大表示（ライトボックス） ----------
+const lightboxOverlay = document.getElementById('lightboxOverlay');
+const lightboxImg = document.getElementById('lightboxImg');
+function openLightbox(src){
+  lightboxImg.src = src;
+  lightboxOverlay.classList.add('open');
+}
+function closeLightbox(){
+  lightboxOverlay.classList.remove('open');
+  lightboxImg.src = '';
+}
+document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+lightboxOverlay.addEventListener('click', (ev)=>{ if(ev.target===lightboxOverlay) closeLightbox(); });
+document.addEventListener('click', (ev)=>{
+  const img = ev.target.closest('.photo-block img, .entity-img, .journal-card img');
+  if(img && !ev.target.closest('.photo-del-btn')) openLightbox(img.src);
+});
 function haversineKm(a,b){
   const toRad = d=>d*Math.PI/180, R=6371;
   const dLat=toRad(b[0]-a[0]), dLon=toRad(b[1]-a[1]);
@@ -1837,15 +1867,23 @@ function selectExternalLocation(r){
   });
 }
 let searchDebounce;
+const mapSearchClearBtn = document.getElementById('mapSearchClearBtn');
 mapSearchInput.addEventListener('input', ()=>{
   clearTimeout(searchDebounce);
   const q = mapSearchInput.value.trim();
+  mapSearchClearBtn.style.display = q ? 'block' : 'none';
   if(!q){ mapSearchResults.classList.remove('show'); return; }
   renderSearchResults(localMatches(q), null, q);
   searchDebounce = setTimeout(async ()=>{
     const results = await geocodeSearch(q);
     renderSearchResults(localMatches(q), results===null ? undefined : results, q);
   }, 500);
+});
+mapSearchClearBtn.addEventListener('click', ()=>{
+  mapSearchInput.value = '';
+  mapSearchClearBtn.style.display = 'none';
+  mapSearchResults.classList.remove('show');
+  mapSearchInput.focus();
 });
 document.getElementById('mapSearchBtn').addEventListener('click', async ()=>{
   const q = mapSearchInput.value.trim();
