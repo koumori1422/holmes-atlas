@@ -34,8 +34,14 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .menu-toggle{display:none;}
 
 .index{background:var(--ink-2);border-right:1px solid var(--line);overflow-y:auto;padding:14px 0 20px;}
-.index-group h2{font-weight:600;font-size:.76rem;color:var(--brass-light);padding:8px 16px 6px;margin:0;border-bottom:1px solid var(--line);}
+.index-group-header{display:flex;align-items:center;gap:6px;width:100%;text-align:left;background:none;border:none;font-weight:600;font-size:.78rem;color:var(--brass-light);padding:9px 16px;margin:0;border-bottom:1px solid var(--line);border-top:1px solid var(--line);cursor:pointer;}
+.index-group-header:hover{background:rgba(171,131,71,.1);}
+.igh-arrow{font-size:.7rem;width:10px;}
+.igh-count{margin-left:auto;font-size:.7rem;opacity:.6;font-weight:400;}
+.index-group-items{padding-bottom:4px;}
 .index-item{display:block;width:100%;text-align:left;background:none;border:none;color:var(--fog);font-size:.9rem;padding:7px 16px;cursor:pointer;}
+.index-link-item{text-decoration:none;box-sizing:border-box;}
+.index-link-desc{display:block;font-size:.72rem;opacity:.6;margin-top:2px;}
 .index-item:hover{background:rgba(171,131,71,.12);}
 .index-item.active{background:rgba(171,131,71,.22);color:#fff;}
 
@@ -1033,6 +1039,15 @@ function renderJournalMarkers(){
 }
 
 // ---------- 索引 ----------
+const EXTERNAL_LINKS = [
+  {name:"日本シャーロック・ホームズ・クラブ（JSHC）", url:"https://www.holmesjapan.jp/", desc:"JSHC公式サイト"},
+  {name:"JSHC月例会ホームページ", url:"https://jshctokyoreikai.cocolog-nifty.com/", desc:"月例会の告知・活動報告"},
+  {name:"日本シャーロック・ホームズクラブ関西支部", url:"https://westholmes.sakura.ne.jp/", desc:"関西支部の公式サイト"},
+  {name:"シャーロック・ホームズの世界", url:"https://shworld.fan.coocan.jp/", desc:"ロンドンの地区別詳細地図で知られる個人サイト"},
+  {name:"Sherlock Holmes Society of London", url:"https://www.sherlock-holmes.org.uk/", desc:"ロンドンのホームズ協会。独自のGazetteer（地名事典）を運営"},
+];
+
+let indexOpenGroups = new Set();
 function renderIndex(){
   const indexEl = document.getElementById('index');
   const groups = {place:[],person:[],work:[],'work-pastiche':[],term:[]};
@@ -1045,16 +1060,36 @@ function renderIndex(){
     }
   });
   Object.values(groups).forEach(arr=>arr.sort((a,b)=>DATA[a].name.localeCompare(DATA[b].name,'ja')));
-  const sectionLabels = {place:'地名', person:'人物', work:'作品（正典）', 'work-pastiche':'作品（パスティーシュ）', term:'用語'};
+  const sectionLabels = {place:'地名', person:'人物', work:'作品（正典）', 'work-pastiche':'作品（パスティーシュ）', term:'用語', links:'関連サイト'};
   let html='';
   ['place','person','work','work-pastiche','term'].forEach(t=>{
     if(groups[t].length===0) return;
-    html += `<div class="index-group"><h2>${sectionLabels[t]}</h2>`;
+    const open = indexOpenGroups.has(t);
+    html += `<div class="index-group">
+      <button class="index-group-header" data-group="${t}"><span class="igh-arrow">${open?'▾':'▸'}</span>${sectionLabels[t]}<span class="igh-count">${groups[t].length}</span></button>
+      <div class="index-group-items" style="display:${open?'block':'none'}">`;
     groups[t].forEach(id=>{ html += `<button class="index-item" data-id="${id}">${DATA[id].name}</button>`; });
-    html += `</div>`;
+    html += `</div></div>`;
   });
+  // 関連サイト
+  const linksOpen = indexOpenGroups.has('links');
+  html += `<div class="index-group">
+    <button class="index-group-header" data-group="links"><span class="igh-arrow">${linksOpen?'▾':'▸'}</span>${sectionLabels.links}<span class="igh-count">${EXTERNAL_LINKS.length}</span></button>
+    <div class="index-group-items" style="display:${linksOpen?'block':'none'}">`;
+  EXTERNAL_LINKS.forEach(l=>{
+    html += `<a class="index-item index-link-item" href="${escapeAttr(l.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(l.name)}<span class="index-link-desc">${escapeHtml(l.desc||'')}</span></a>`;
+  });
+  html += `</div></div>`;
+
   indexEl.innerHTML = html;
-  indexEl.querySelectorAll('.index-item').forEach(btn=>btn.addEventListener('click', ()=>showEntity(btn.dataset.id)));
+  indexEl.querySelectorAll('.index-item[data-id]').forEach(btn=>btn.addEventListener('click', ()=>showEntity(btn.dataset.id)));
+  indexEl.querySelectorAll('.index-group-header').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const g = btn.dataset.group;
+      if(indexOpenGroups.has(g)) indexOpenGroups.delete(g); else indexOpenGroups.add(g);
+      renderIndex();
+    });
+  });
 }
 
 // ---------- 詳細パネル ----------
