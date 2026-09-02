@@ -818,7 +818,7 @@ const SEED = {
 };
 const TYPE_LABEL = {place:"地名", person:"人物", work:"作品", term:"用語"};
 function entityLabel(e){
-  if(e.type==='work') return e.canon ? '正典' : 'パスティーシュ';
+  if(e.type==='work') return e.canon ? '正典' : '正典外';
   return TYPE_LABEL[e.type];
 }
 function entityClass(e){
@@ -1246,7 +1246,7 @@ function renderIndex(){
     }
   });
   Object.values(groups).forEach(arr=>arr.sort((a,b)=>DATA[a].name.localeCompare(DATA[b].name,'ja')));
-  const sectionLabels = {place:'地名', person:'人物', work:'作品（正典）', 'work-pastiche':'作品（パスティーシュ）', term:'用語', links:'関連サイト'};
+  const sectionLabels = {place:'地名', person:'人物', work:'作品（正典）', 'work-pastiche':'作品（正典外）', term:'用語', links:'関連サイト'};
   let html='';
 
   // お気に入り（ジャンル別）
@@ -1516,8 +1516,8 @@ function openEntityModal(prefill){
       <div class="latlng-row"><input type="text" id="f-lat" placeholder="緯度" value="${prefill?prefill.lat.toFixed(4):''}"><input type="text" id="f-lng" placeholder="経度" value="${prefill?prefill.lng.toFixed(4):''}"></div>
     </div>
     <div class="field" id="f-canon-field" style="display:none;">
-      <label>正典 / パスティーシュ</label>
-      <select id="f-canon"><option value="true">正典（コナン・ドイルの原作）</option><option value="false">パスティーシュ（二次創作）</option></select>
+      <label>正典 / 正典外</label>
+      <select id="f-canon"><option value="true">正典（コナン・ドイルの原作）</option><option value="false">正典外（パスティーシュ・映像化・翻案など）</option></select>
     </div>
     <div class="field"><label>説明文</label><textarea id="f-desc"></textarea></div>
     <div class="field"><label>画像（任意）</label>
