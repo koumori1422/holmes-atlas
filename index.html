@@ -1312,7 +1312,8 @@ function showEntity(id, opts={}){
   if(!opts.fromTrail){ trail = trail.filter(t=>t!==id); trail.push(id); if(trail.length>6) trail.shift(); }
   document.querySelectorAll('.index-item').forEach(b=>b.classList.toggle('active', b.dataset.id===id));
   if(e.type==='place' && e.coords){
-    if(markers[id]) markerClusterGroup.zoomToShowLayer(markers[id], ()=>{});
+    const m0 = markers[id];
+    if(m0 && markerClusterGroup.hasLayer(m0)) markerClusterGroup.zoomToShowLayer(m0, ()=>{});
     else map.flyTo(e.coords, zoomForEntity(id), {duration:0.7});
   }
 
@@ -1384,8 +1385,11 @@ function goToMap(id){
   panel.classList.remove('open');
   document.getElementById('timeline').classList.remove('open');
   const m = markers[id];
-  if(m){
+  if(m && markerClusterGroup.hasLayer(m)){
     markerClusterGroup.zoomToShowLayer(m, ()=>{ m.openTooltip(); });
+  } else if(m){
+    map.flyTo(e.coords, zoomForEntity(id), {duration:0.7});
+    m.openTooltip();
   } else {
     map.flyTo(e.coords, zoomForEntity(id), {duration:0.7});
   }
