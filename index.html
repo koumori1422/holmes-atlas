@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ホームズ・アトラス — 自分用メモ版</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Crimson+Pro:wght@400;500;600&display=swap');
 
@@ -270,6 +272,7 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ---------- Supabase設定 ----------
@@ -1115,13 +1118,19 @@ function makeJournalIcon(){
     iconSize:[24,24], iconAnchor:[12,12]});
 }
 let markers = {};
+const markerClusterGroup = L.markerClusterGroup({
+  maxClusterRadius: 55,
+  disableClusteringAtZoom: 17,
+  spiderfyOnMaxZoom: true,
+  showCoverageOnHover: false
+}).addTo(map);
 function renderMarkers(){
-  Object.values(markers).forEach(m=>map.removeLayer(m));
+  markerClusterGroup.clearLayers();
   markers = {};
   Object.keys(DATA).forEach(id=>{
     const e = DATA[id];
     if(e.type==='place' && e.coords){
-      const m = L.marker(e.coords,{icon:makeIcon()}).addTo(map);
+      const m = L.marker(e.coords,{icon:makeIcon()});
       m.on('click', ()=>showEntity(id));
       if(isInUK(e.coords)){
         m.bindTooltip(e.name,{direction:'right',offset:[10,0],permanent:true,className:'place-label'});
@@ -1130,6 +1139,7 @@ function renderMarkers(){
       }
       else m.bindTooltip(e.name,{direction:'top',offset:[0,-10]});
       markers[id]=m;
+      markerClusterGroup.addLayer(m);
     }
   });
 }
@@ -1265,7 +1275,10 @@ function showEntity(id, opts={}){
   document.getElementById('timeline').classList.remove('open');
   if(!opts.fromTrail){ trail = trail.filter(t=>t!==id); trail.push(id); if(trail.length>6) trail.shift(); }
   document.querySelectorAll('.index-item').forEach(b=>b.classList.toggle('active', b.dataset.id===id));
-  if(e.type==='place' && e.coords) map.flyTo(e.coords, zoomForEntity(id), {duration:0.7});
+  if(e.type==='place' && e.coords){
+    if(markers[id]) markerClusterGroup.zoomToShowLayer(markers[id], ()=>{});
+    else map.flyTo(e.coords, zoomForEntity(id), {duration:0.7});
+  }
 
   const trailHtml = trail.map((tid,i)=>{
     const sep = i>0 ? '<span class="sep">›</span>' : '';
@@ -1334,8 +1347,12 @@ function goToMap(id){
   if(!e || !e.coords) return;
   panel.classList.remove('open');
   document.getElementById('timeline').classList.remove('open');
-  map.flyTo(e.coords, zoomForEntity(id), {duration:0.7});
-  if(markers[id]) markers[id].openTooltip();
+  const m = markers[id];
+  if(m){
+    markerClusterGroup.zoomToShowLayer(m, ()=>{ m.openTooltip(); });
+  } else {
+    map.flyTo(e.coords, zoomForEntity(id), {duration:0.7});
+  }
 }
 
 // ---------- 個人メモ（★評価・訪問日・所有版・自由記述） ----------
