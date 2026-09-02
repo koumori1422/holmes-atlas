@@ -7,6 +7,15 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Crimson+Pro:wght@400;500;600&display=swap');
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ホームズ・アトラス — 自分用メモ版</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Crimson+Pro:wght@400;500;600&display=swap');
 
 :root{
   --ink:#1c2430; --ink-2:#232d3c;
@@ -921,9 +930,10 @@ function wireImageUpload(fileInputId, previewId, onResult){
     }
   });
 }
-async function geocodeSearch(query){
+async function geocodeSearchOnce(query, lang){
   try{
-    const url = 'https://photon.komoot.io/api/?limit=6&lang=ja&q=' + encodeURIComponent(query);
+    const langParam = lang ? `&lang=${lang}` : '';
+    const url = `https://photon.komoot.io/api/?limit=6${langParam}&q=` + encodeURIComponent(query);
     const res = await fetch(url);
     if(!res.ok) throw new Error('geocode failed');
     const data = await res.json();
@@ -934,6 +944,14 @@ async function geocodeSearch(query){
       return {lat, lon, display_name: parts.length ? parts.join('、') : query};
     });
   }catch(e){ return null; }
+}
+async function geocodeSearch(query){
+  const jaResults = await geocodeSearchOnce(query, 'ja');
+  if(jaResults === null) return null; // 通信自体が失敗
+  if(jaResults.length > 0) return jaResults;
+  // 日本語優先で見つからなければ、言語指定なし（英語表記優先）で再検索
+  const fallback = await geocodeSearchOnce(query, null);
+  return fallback === null ? jaResults : fallback;
 }
 
 // ---------- 地図 ----------
@@ -1609,9 +1627,23 @@ function renderTimeline(){
 const mapSearchInput = document.getElementById('mapSearchInput');
 const mapSearchResults = document.getElementById('mapSearchResults');
 let externalMarker = null;
+function normalizeSearchStr(s){
+  return s.toLowerCase().replace(/[・･\s\-—–_,、。]/g,'');
+}
+function fuzzyMatch(target, query){
+  const t = normalizeSearchStr(target), q = normalizeSearchStr(query);
+  if(!q) return false;
+  if(t.includes(q)) return true;
+  if(q.length < 2) return false;
+  let ti=0, matched=0;
+  for(const ch of q){
+    const idx = t.indexOf(ch, ti);
+    if(idx>=0){ matched++; ti = idx+1; }
+  }
+  return (matched / q.length) >= 0.7;
+}
 function localMatches(q){
-  const ql=q.toLowerCase();
-  return Object.keys(DATA).filter(id=>DATA[id].name.toLowerCase().includes(ql)).slice(0,6);
+  return Object.keys(DATA).filter(id=>fuzzyMatch(DATA[id].name, q)).slice(0,6);
 }
 function renderSearchResults(localIds, externalResults){
   let html='';
@@ -1621,7 +1653,11 @@ function renderSearchResults(localIds, externalResults){
   }
   if(externalResults!==null){
     html += `<div class="map-search-section">地図上の候補地</div>`;
-    html += externalResults.length ? externalResults.map((r,i)=>`<button type="button" class="map-search-item" data-ext="${i}">${escapeHtml(r.display_name)}</button>`).join('') : `<div class="map-search-section" style="background:none;">見つかりませんでした</div>`;
+    if(externalResults === undefined){
+      html += `<div class="map-search-section" style="background:none;">検索に失敗しました。通信環境をご確認のうえ、もう一度お試しください。</div>`;
+    } else {
+      html += externalResults.length ? externalResults.map((r,i)=>`<button type="button" class="map-search-item" data-ext="${i}">${escapeHtml(r.display_name)}</button>`).join('') : `<div class="map-search-section" style="background:none;">見つかりませんでした</div>`;
+    }
   }
   if(!html) return;
   mapSearchResults.innerHTML = html;
@@ -1663,14 +1699,14 @@ mapSearchInput.addEventListener('input', ()=>{
   renderSearchResults(localMatches(q), null);
   searchDebounce = setTimeout(async ()=>{
     const results = await geocodeSearch(q);
-    renderSearchResults(localMatches(q), results||[]);
+    renderSearchResults(localMatches(q), results===null ? undefined : results);
   }, 500);
 });
 document.getElementById('mapSearchBtn').addEventListener('click', async ()=>{
   const q = mapSearchInput.value.trim();
   if(!q) return;
   const results = await geocodeSearch(q);
-  renderSearchResults(localMatches(q), results||[]);
+  renderSearchResults(localMatches(q), results===null ? undefined : results);
 });
 document.addEventListener('click', (ev)=>{ if(!ev.target.closest('.map-search')) mapSearchResults.classList.remove('show'); });
 
