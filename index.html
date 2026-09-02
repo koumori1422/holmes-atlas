@@ -80,6 +80,7 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .place-label{background:rgba(28,36,48,.88)!important;color:var(--parchment)!important;border:1px solid var(--brass)!important;font-family:'Crimson Pro',serif;font-size:.72rem!important;padding:2px 7px!important;border-radius:2px;box-shadow:none!important;}
 .place-label::before{border-top-color:rgba(28,36,48,.88)!important;}
 .hide-place-labels .place-label{display:none;}
+.hide-place-labels .place-label.force-show{display:block!important;}
 
 .panel{position:absolute;top:0;right:0;bottom:0;width:min(420px,90%);background:var(--parchment);color:var(--charcoal);transform:translateX(100%);transition:transform .28s ease;overflow-y:auto;border-left:3px solid var(--brass);box-shadow:-6px 0 18px rgba(0,0,0,.35);}
 .panel.open{transform:translateX(0);}
@@ -1026,7 +1027,11 @@ function renderMarkers(){
     if(e.type==='place' && e.coords){
       const m = L.marker(e.coords,{icon:makeIcon()}).addTo(map);
       m.on('click', ()=>showEntity(id));
-      if(isInUK(e.coords)) m.bindTooltip(e.name,{direction:'right',offset:[10,0],permanent:true,className:'place-label'});
+      if(isInUK(e.coords)){
+        m.bindTooltip(e.name,{direction:'right',offset:[10,0],permanent:true,className:'place-label'});
+        m.on('mouseover', ()=>{ m.getTooltip()?.getElement()?.classList.add('force-show'); });
+        m.on('mouseout', ()=>{ m.getTooltip()?.getElement()?.classList.remove('force-show'); });
+      }
       else m.bindTooltip(e.name,{direction:'top',offset:[0,-10]});
       markers[id]=m;
     }
