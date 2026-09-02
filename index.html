@@ -57,6 +57,9 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .locate-map-btn{position:absolute;bottom:16px;right:16px;z-index:500;width:42px;height:42px;border-radius:50%;background:var(--ink-2);border:1px solid var(--line);color:var(--fog);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.35);}
 .locate-map-btn:hover{border-color:var(--brass);}
 .locate-map-btn svg{width:20px;height:20px;}
+.historic-toggle-btn{position:absolute;bottom:16px;right:66px;z-index:500;height:42px;padding:0 14px;border-radius:21px;background:var(--ink-2);border:1px solid var(--line);color:var(--fog);cursor:pointer;font-size:.82rem;box-shadow:0 2px 8px rgba(0,0,0,.35);white-space:nowrap;}
+.historic-toggle-btn:hover{border-color:var(--brass);}
+.historic-toggle-btn.active{background:var(--brass);color:#fff;border-color:var(--brass);}
 .nearby-panel{position:absolute;bottom:66px;right:16px;z-index:500;width:min(300px,80%);background:var(--parchment);border:1px solid var(--line);border-radius:4px;box-shadow:0 4px 14px rgba(0,0,0,.3);max-height:320px;overflow-y:auto;display:none;}
 .nearby-panel.show{display:block;}
 .nearby-panel-head{padding:10px 14px;font-size:.82rem;font-weight:600;color:var(--ink);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
@@ -211,6 +214,7 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
     <button class="locate-map-btn" id="locateMapBtn" title="現在地から探す" aria-label="現在地から近い場所を探す">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
     </button>
+    <button class="historic-toggle-btn" id="historicToggleBtn" title="ホームズ時代の古地図に切り替え">🗺️ 古地図</button>
     <div class="nearby-panel" id="nearbyPanel"></div>
     <div class="panel" id="panel">
       <button class="panel-close" id="panelClose">×</button>
@@ -232,6 +236,11 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 const SUPABASE_URL = 'https://lrmjkdxffmjyfagzswco.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_MSdecPp-EtuJig_6I7R4Dw_IK9Z6q6_';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ---------- 古地図レイヤー設定（★MapTilerに登録後、ここに値を入れてください） ----------
+// MapTilerダッシュボード → Tiles → United Kingdom → 使いたいNLS古地図を選択 → そこに表示されるタイルIDを入れる
+const MAPTILER_KEY = 'tg7mg7zNbwjUpISPy2YN';
+const MAPTILER_HISTORIC_TILE_ID = 'uk-osgb10k1888';
 
 // ---------- ベースデータ（公開パイロット版と同じ内容を流用） ----------
 const SEED = {
@@ -855,6 +864,42 @@ tileLayer.on('tileerror', ()=>{ tilesErrored++; mapStatusEl.textContent='地図�
 tileLayer.on('tileload', ()=>{ tilesLoaded++; if(tilesErrored===0) mapStatusEl.classList.remove('show'); });
 mapStatusEl.classList.add('show');
 setTimeout(()=>{ if(tilesLoaded===0 && tilesErrored===0) mapStatusEl.textContent='地図の読み込みに時間がかかっています…'; }, 4000);
+
+// ---------- 古地図（ホームズ時代）レイヤーの切り替え ----------
+let historicLayer = null;
+let showingHistoric = false;
+function getHistoricLayer(){
+  if(!historicLayer){
+    historicLayer = L.tileLayer(`https://api.maptiler.com/tiles/${MAPTILER_HISTORIC_TILE_ID}/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`, {
+      attribution:'Historic map: National Library of Scotland / MapTiler',
+      maxZoom:18
+    });
+    historicLayer.on('tileerror', ()=>{
+      mapStatusEl.textContent = '古地図タイルを読み込めませんでした（設定をご確認ください）';
+      mapStatusEl.classList.add('show');
+    });
+  }
+  return historicLayer;
+}
+const historicToggleBtn = document.getElementById('historicToggleBtn');
+historicToggleBtn.addEventListener('click', ()=>{
+  if(MAPTILER_KEY.includes('YOUR_MAPTILER') || MAPTILER_HISTORIC_TILE_ID.includes('YOUR_MAPTILER')){
+    showToast('⚠ 古地図を使うにはMapTilerの設定（APIキーとタイルID）が必要です。');
+    return;
+  }
+  showingHistoric = !showingHistoric;
+  if(showingHistoric){
+    map.removeLayer(tileLayer);
+    getHistoricLayer().addTo(map);
+    historicToggleBtn.classList.add('active');
+    historicToggleBtn.textContent = '🗺️ 現在の地図';
+  } else {
+    map.removeLayer(getHistoricLayer());
+    tileLayer.addTo(map);
+    historicToggleBtn.classList.remove('active');
+    historicToggleBtn.textContent = '🗺️ 古地図';
+  }
+});
 
 function fixMapSize(){ map.invalidateSize(); }
 window.addEventListener('load', fixMapSize);
