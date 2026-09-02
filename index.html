@@ -121,7 +121,8 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .dot-pastiche{background:var(--pastiche);}
 .edit-btn{font-size:.85rem;background:none;border:1px solid var(--brass);color:var(--brass);padding:6px 13px;border-radius:3px;cursor:pointer;margin-right:8px;}
 .edit-btn:hover{background:var(--brass);color:#fff;}
-.map-jump-main-btn{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;background:none;border:1px solid var(--brass);color:var(--brass);padding:6px 13px;border-radius:3px;cursor:pointer;margin-bottom:14px;}
+.map-jump-main-btn{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;background:none;border:1px solid var(--brass);color:var(--brass);padding:6px 13px;border-radius:3px;cursor:pointer;margin-bottom:14px;margin-right:8px;text-decoration:none;}
+.map-jump-main-btn:hover{background:var(--brass);color:#fff;}
 .map-jump-main-btn svg{width:14px;height:14px;}
 
 .note-section{border-top:1px solid var(--line);margin-top:18px;padding-top:14px;}
@@ -933,7 +934,7 @@ async function geocodeSearchOnce(query, lang){
     return (data.features||[]).map(f=>{
       const center = f.center || (f.geometry && f.geometry.coordinates) || [null,null];
       const lon = center[0], lat = center[1];
-      return {lat, lon, display_name: f.place_name || f.text || query};
+      return {lat, lon, display_name: f.place_name || f.text || query, placeType: f.place_type || []};
     }).filter(r=>r.lat!==null);
   }catch(e){ return null; }
 }
@@ -1159,7 +1160,11 @@ function showEntity(id, opts={}){
 
   const legacyImgHtml = (!e.photos || !e.photos.length) && e.image ? `<img class="entity-img" src="${escapeAttr(e.image)}" alt="">` : '';
   const imgHtml = renderPhotoGallery(e.photos, id) + legacyImgHtml;
-  const mapJumpHtml = (e.type==='place' && e.coords) ? `<button class="map-jump-main-btn" id="mapJumpBtn">${pinIconSvg} 地図で見る</button>` : '';
+  const gmapsIconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>';
+  const mapJumpHtml = (e.type==='place' && e.coords)
+    ? `<button class="map-jump-main-btn" id="mapJumpBtn">${pinIconSvg} 地図で見る</button>
+       <a class="map-jump-main-btn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.name)}" target="_blank" rel="noopener noreferrer">${gmapsIconSvg} Googleマップ（営業時間など）</a>`
+    : '';
   const noteHtml = renderNoteSection(id);
   const journalHtml = e.type==='place' ? renderEntityJournalSection(id) : '';
 
@@ -1667,10 +1672,23 @@ function renderSearchResults(localIds, externalResults){
     });
   }
 }
+function zoomForSearchResult(r){
+  const types = r.placeType || [];
+  if(types.includes('country')) return 5;
+  if(types.includes('region') || types.includes('subregion') || types.includes('county')) return 7;
+  if(types.includes('place')) return 10;
+  if(types.includes('postal_code') || types.includes('locality') || types.includes('neighborhood') || types.includes('district') || types.includes('municipal_district')) return 13;
+  if(types.includes('address') || types.includes('street') || types.includes('poi') || types.includes('poi.landmark')) return 16;
+  // place_typeが取れない場合は、表記の細かさ（カンマ区切りの数）から推定
+  const parts = (r.display_name||'').split(/,|、/).map(s=>s.trim()).filter(Boolean);
+  if(parts.length <= 1) return 6;
+  if(parts.length === 2) return 9;
+  return 15;
+}
 function selectExternalLocation(r){
   const lat=parseFloat(r.lat), lng=parseFloat(r.lon);
   panel.classList.remove('open'); timelineEl.classList.remove('open');
-  map.flyTo([lat,lng], 11, {duration:0.8});
+  map.flyTo([lat,lng], zoomForSearchResult(r), {duration:0.8});
   if(externalMarker) map.removeLayer(externalMarker);
   externalMarker = L.marker([lat,lng], {icon: L.divIcon({className:'leaflet-holmes-icon', iconSize:[26,26], iconAnchor:[13,26],
     html:'<svg viewBox="0 0 24 24" fill="none" stroke="#ece3cc" stroke-width="2.2"><circle cx="12" cy="9" r="3"/><path d="M12 21c-4-4-7-7.5-7-11a7 7 0 0 1 14 0c0 3.5-3 7-7 11z"/></svg>'})}).addTo(map);
