@@ -42,6 +42,10 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .index-item{display:block;width:100%;text-align:left;background:none;border:none;color:var(--fog);font-size:.9rem;padding:7px 16px;cursor:pointer;}
 .index-link-item{text-decoration:none;box-sizing:border-box;}
 .index-link-desc{display:block;font-size:.72rem;opacity:.6;margin-top:2px;}
+.alias-list-item{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 16px;font-size:.82rem;color:var(--fog);}
+.alias-list-empty{padding:8px 16px;font-size:.78rem;opacity:.55;font-style:italic;}
+.alias-delete-btn{background:none;border:1px solid var(--line);color:var(--fog);width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:.78rem;flex:none;line-height:1;padding:0;}
+.alias-delete-btn:hover{border-color:var(--burgundy);color:var(--burgundy);}
 .index-item:hover{background:rgba(171,131,71,.12);}
 .index-item.active{background:rgba(171,131,71,.22);color:#fff;}
 
@@ -59,6 +63,9 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .map-search-item:hover{background:#f7ecd0;}
 .map-search-item .msi-sub{font-size:.72rem;opacity:.6;margin-left:auto;padding-left:8px;}
 .map-search-section{padding:6px 12px;font-size:.7rem;color:var(--slate);background:var(--parchment-2);}
+.alias-register-row{display:flex;gap:6px;padding:8px 12px;background:#fff;}
+.alias-register-row input{flex:1;padding:6px 8px;border:1px solid var(--line);border-radius:3px;font-size:.8rem;}
+.alias-register-row button{background:var(--brass);border:none;color:#fff;padding:0 12px;border-radius:3px;cursor:pointer;font-size:.8rem;white-space:nowrap;}
 .search-popup-btn{background:var(--brass);border:none;color:#fff;padding:5px 10px;border-radius:3px;cursor:pointer;font-size:.8rem;margin-top:4px;}
 .locate-map-btn{position:absolute;bottom:16px;right:16px;z-index:500;width:42px;height:42px;border-radius:50%;background:var(--ink-2);border:1px solid var(--line);color:var(--fog);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.35);}
 .locate-map-btn:hover{border-color:var(--brass);}
@@ -796,6 +803,7 @@ let overrides = {};   // { entityId: {name?, desc?, image?, coords?, extraRelate
 let additions = {};   // { newId: {type,name,desc,image,coords,related:[]} }
 let personalNotes = {}; // { entityId: {rating, visitedDate, ownedEdition, notes} }
 let journal = [];     // [{id, entityId, placeName, coords, rating, comment, image, visitedDate, createdAt}]
+let customAliases = {}; // { 正規化されたカタカナキー: "英語表記" } — サイト上で追加できる地名対応辞書
 
 async function safeGet(key){
   try{
@@ -816,6 +824,7 @@ async function loadAll(){
   additions = (await safeGet('p-additions')) || {};
   personalNotes = (await safeGet('p-notes')) || {};
   journal = (await safeGet('p-journal')) || [];
+  customAliases = (await safeGet('p-aliases')) || {};
 }
 
 function buildData(){
@@ -957,7 +966,17 @@ function normalizeForAlias(s){
   return s.replace(/[・･\s]/g,'');
 }
 function resolveKatakanaAlias(query){
-  return KATAKANA_PLACE_ALIASES[normalizeForAlias(query)] || null;
+  const key = normalizeForAlias(query);
+  return customAliases[key] || KATAKANA_PLACE_ALIASES[key] || null;
+}
+async function saveCustomAlias(query, englishName){
+  const key = normalizeForAlias(query);
+  customAliases[key] = englishName;
+  await safeSet('p-aliases', customAliases);
+}
+async function deleteCustomAlias(key){
+  delete customAliases[key];
+  await safeSet('p-aliases', customAliases);
 }
 async function geocodeSearch(query){
   const alias = resolveKatakanaAlias(query);
@@ -1131,8 +1150,32 @@ function renderIndex(){
   });
   html += `</div></div>`;
 
+  // 地名の言い換え辞書
+  const aliasKeys = Object.keys(customAliases);
+  const aliasOpen = indexOpenGroups.has('aliases');
+  html += `<div class="index-group">
+    <button class="index-group-header" data-group="aliases"><span class="igh-arrow">${aliasOpen?'▾':'▸'}</span>地名の言い換え辞書<span class="igh-count">${aliasKeys.length}</span></button>
+    <div class="index-group-items" style="display:${aliasOpen?'block':'none'}">`;
+  if(aliasKeys.length===0){
+    html += `<div class="alias-list-empty">まだありません。検索して見つからなかったとき、その場で登録できます。</div>`;
+  } else {
+    aliasKeys.forEach(k=>{
+      html += `<div class="alias-list-item"><span>${escapeHtml(k)} → ${escapeHtml(customAliases[k])}</span><button class="alias-delete-btn" data-del-alias="${escapeAttr(k)}">×</button></div>`;
+    });
+  }
+  html += `</div></div>`;
+
   indexEl.innerHTML = html;
   indexEl.querySelectorAll('.index-item[data-id]').forEach(btn=>btn.addEventListener('click', ()=>showEntity(btn.dataset.id)));
+  indexEl.querySelectorAll('[data-del-alias]').forEach(btn=>{
+    btn.addEventListener('click', async (ev)=>{
+      ev.stopPropagation();
+      if(!confirm('この対応を削除します。よろしいですか？')) return;
+      await deleteCustomAlias(btn.dataset.delAlias);
+      renderIndex();
+      showToast('削除しました。');
+    });
+  });
   indexEl.querySelectorAll('.index-group-header').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const g = btn.dataset.group;
@@ -1677,7 +1720,7 @@ function fuzzyMatch(target, query){
 function localMatches(q){
   return Object.keys(DATA).filter(id=>fuzzyMatch(DATA[id].name, q)).slice(0,6);
 }
-function renderSearchResults(localIds, externalResults){
+function renderSearchResults(localIds, externalResults, query){
   let html='';
   if(localIds.length){
     html += `<div class="map-search-section">アトラス内の項目</div>`;
@@ -1687,8 +1730,14 @@ function renderSearchResults(localIds, externalResults){
     html += `<div class="map-search-section">地図上の候補地</div>`;
     if(externalResults === undefined){
       html += `<div class="map-search-section" style="background:none;">検索に失敗しました。通信環境をご確認のうえ、もう一度お試しください。</div>`;
+    } else if(externalResults.length){
+      html += externalResults.map((r,i)=>`<button type="button" class="map-search-item" data-ext="${i}">${escapeHtml(r.display_name)}</button>`).join('');
     } else {
-      html += externalResults.length ? externalResults.map((r,i)=>`<button type="button" class="map-search-item" data-ext="${i}">${escapeHtml(r.display_name)}</button>`).join('') : `<div class="map-search-section" style="background:none;">見つかりませんでした</div>`;
+      html += `<div class="map-search-section" style="background:none;">見つかりませんでした</div>
+        <div class="alias-register-row">
+          <input type="text" id="aliasEnglishInput" placeholder="英語表記が分かれば登録（例：Oxford Street, London）">
+          <button type="button" id="aliasRegisterBtn">登録</button>
+        </div>`;
     }
   }
   if(!html) return;
@@ -1700,6 +1749,18 @@ function renderSearchResults(localIds, externalResults){
   if(externalResults){
     mapSearchResults.querySelectorAll('[data-ext]').forEach(btn=>{
       btn.addEventListener('click', ()=>{ selectExternalLocation(externalResults[parseInt(btn.dataset.ext)]); mapSearchResults.classList.remove('show'); });
+    });
+  }
+  const aliasBtn = document.getElementById('aliasRegisterBtn');
+  if(aliasBtn){
+    aliasBtn.addEventListener('click', async (ev)=>{
+      ev.stopPropagation();
+      const englishName = document.getElementById('aliasEnglishInput').value.trim();
+      if(!englishName){ showToast('英語表記を入力してください。'); return; }
+      await saveCustomAlias(query, englishName);
+      showToast(`「${query}」→「${englishName}」を辞書に登録しました。`);
+      const results = await geocodeSearch(query);
+      renderSearchResults(localMatches(query), results===null ? undefined : results, query);
     });
   }
 }
@@ -1741,17 +1802,17 @@ mapSearchInput.addEventListener('input', ()=>{
   clearTimeout(searchDebounce);
   const q = mapSearchInput.value.trim();
   if(!q){ mapSearchResults.classList.remove('show'); return; }
-  renderSearchResults(localMatches(q), null);
+  renderSearchResults(localMatches(q), null, q);
   searchDebounce = setTimeout(async ()=>{
     const results = await geocodeSearch(q);
-    renderSearchResults(localMatches(q), results===null ? undefined : results);
+    renderSearchResults(localMatches(q), results===null ? undefined : results, q);
   }, 500);
 });
 document.getElementById('mapSearchBtn').addEventListener('click', async ()=>{
   const q = mapSearchInput.value.trim();
   if(!q) return;
   const results = await geocodeSearch(q);
-  renderSearchResults(localMatches(q), results===null ? undefined : results);
+  renderSearchResults(localMatches(q), results===null ? undefined : results, q);
 });
 document.addEventListener('click', (ev)=>{ if(!ev.target.closest('.map-search')) mapSearchResults.classList.remove('show'); });
 
