@@ -44,6 +44,7 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .index-link-desc{display:block;font-size:.72rem;opacity:.6;margin-top:2px;}
 .alias-list-item{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 16px;font-size:.82rem;color:var(--fog);}
 .alias-list-empty{padding:8px 16px;font-size:.78rem;opacity:.55;font-style:italic;}
+.alias-add-standalone-btn{display:block;width:calc(100% - 24px);margin:4px 12px 8px;font-size:.78rem;background:var(--teal);border:none;color:#fff;padding:6px 0;border-radius:3px;cursor:pointer;}
 .alias-delete-btn{background:none;border:1px solid var(--line);color:var(--fog);width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:.78rem;flex:none;line-height:1;padding:0;}
 .alias-delete-btn:hover{border-color:var(--burgundy);color:var(--burgundy);}
 .index-item:hover{background:rgba(171,131,71,.12);}
@@ -1155,9 +1156,10 @@ function renderIndex(){
   const aliasOpen = indexOpenGroups.has('aliases');
   html += `<div class="index-group">
     <button class="index-group-header" data-group="aliases"><span class="igh-arrow">${aliasOpen?'▾':'▸'}</span>地名の言い換え辞書<span class="igh-count">${aliasKeys.length}</span></button>
-    <div class="index-group-items" style="display:${aliasOpen?'block':'none'}">`;
+    <div class="index-group-items" style="display:${aliasOpen?'block':'none'}">
+      <button class="alias-add-standalone-btn" id="aliasAddStandaloneBtn">＋ 対応を追加</button>`;
   if(aliasKeys.length===0){
-    html += `<div class="alias-list-empty">まだありません。検索して見つからなかったとき、その場で登録できます。</div>`;
+    html += `<div class="alias-list-empty">まだありません。</div>`;
   } else {
     aliasKeys.forEach(k=>{
       html += `<div class="alias-list-item"><span>${escapeHtml(k)} → ${escapeHtml(customAliases[k])}</span><button class="alias-delete-btn" data-del-alias="${escapeAttr(k)}">×</button></div>`;
@@ -1167,6 +1169,7 @@ function renderIndex(){
 
   indexEl.innerHTML = html;
   indexEl.querySelectorAll('.index-item[data-id]').forEach(btn=>btn.addEventListener('click', ()=>showEntity(btn.dataset.id)));
+  document.getElementById('aliasAddStandaloneBtn')?.addEventListener('click', (ev)=>{ ev.stopPropagation(); openAliasModal(); });
   indexEl.querySelectorAll('[data-del-alias]').forEach(btn=>{
     btn.addEventListener('click', async (ev)=>{
       ev.stopPropagation();
@@ -1490,6 +1493,25 @@ function openEditModal(targetId){
   });
 }
 
+function openAliasModal(){
+  modalBody.innerHTML = `
+    <h3>地名の言い換えを登録</h3>
+    <div class="modal-sub">検索するとき自動で変換される、カタカナ→英語の対応を追加します。</div>
+    <div class="field"><label>カタカナ表記（検索時に打ち込む文字）</label><input type="text" id="alias-ja" placeholder="例：ウーリッジ"></div>
+    <div class="field"><label>英語表記</label><input type="text" id="alias-en" placeholder="例：Woolwich, London"></div>
+    <div class="modal-actions"><button class="modal-cancel" id="alias-cancel">キャンセル</button><button class="modal-submit" id="alias-submit">登録する</button></div>`;
+  overlay.classList.add('open');
+  document.getElementById('alias-cancel').addEventListener('click', closeModal);
+  document.getElementById('alias-submit').addEventListener('click', async ()=>{
+    const ja = document.getElementById('alias-ja').value.trim();
+    const en = document.getElementById('alias-en').value.trim();
+    if(!ja || !en){ showToast('両方の欄を入力してください。'); return; }
+    await saveCustomAlias(ja, en);
+    closeModal(); showToast('辞書に登録しました。');
+    renderIndex();
+  });
+}
+
 function openPhotoModal(entityId){
   const e = DATA[entityId];
   let uploadedImageData = null;
@@ -1730,13 +1752,16 @@ function renderSearchResults(localIds, externalResults, query){
     html += `<div class="map-search-section">地図上の候補地</div>`;
     if(externalResults === undefined){
       html += `<div class="map-search-section" style="background:none;">検索に失敗しました。通信環境をご確認のうえ、もう一度お試しください。</div>`;
-    } else if(externalResults.length){
-      html += externalResults.map((r,i)=>`<button type="button" class="map-search-item" data-ext="${i}">${escapeHtml(r.display_name)}</button>`).join('');
     } else {
-      html += `<div class="map-search-section" style="background:none;">見つかりませんでした</div>
-        <div class="alias-register-row">
-          <input type="text" id="aliasEnglishInput" placeholder="英語表記が分かれば登録（例：Oxford Street, London）">
-          <button type="button" id="aliasRegisterBtn">登録</button>
+      if(externalResults.length){
+        html += externalResults.map((r,i)=>`<button type="button" class="map-search-item" data-ext="${i}">${escapeHtml(r.display_name)}</button>`).join('');
+      } else {
+        html += `<div class="map-search-section" style="background:none;">見つかりませんでした</div>`;
+      }
+      const prefill = externalResults.length ? externalResults[0].display_name : '';
+      html += `<div class="alias-register-row">
+          <input type="text" id="aliasEnglishInput" value="${escapeAttr(prefill)}" placeholder="英語表記が分かれば登録（例：Oxford Street, London）">
+          <button type="button" id="aliasRegisterBtn">辞書に登録</button>
         </div>`;
     }
   }
