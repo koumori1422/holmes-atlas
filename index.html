@@ -96,8 +96,12 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .panel-body h3{font-family:'Playfair Display',serif;font-weight:600;font-size:1.4rem;margin:2px 0 12px;color:var(--ink);}
 .panel-body img.entity-img{width:100%;border-radius:3px;margin-bottom:14px;border:1px solid var(--line);}
 .photo-row{display:flex;gap:10px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px;}
-.photo-row .photo-block{flex:0 0 150px;}
+.photo-row .photo-block{flex:0 0 150px;position:relative;}
 .photo-block{flex:1;min-width:140px;}
+.photo-del-btn{position:absolute;top:4px;right:4px;z-index:5;width:20px;height:20px;border-radius:50%;background:rgba(28,36,48,.75);color:#fff;border:none;cursor:pointer;font-size:.85rem;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;}
+.photo-del-btn:hover{background:var(--burgundy);}
+.add-photo-btn{flex:0 0 80px;height:150px;border:1px dashed var(--line);border-radius:3px;background:none;color:var(--slate);cursor:pointer;font-size:.72rem;line-height:1.4;}
+.add-photo-btn:hover{border-color:var(--brass);color:var(--brass);}
 .photo-block img{width:100%;height:150px;object-fit:cover;border-radius:3px;border:1px solid var(--line);display:block;}
 .photo-block .photo-label{font-size:.72rem;font-weight:600;color:var(--slate);margin-bottom:3px;}
 .photo-credit{font-size:.68rem;color:var(--slate);line-height:1.4;margin-top:3px;}
@@ -819,7 +823,7 @@ function buildData(){
     data[id] = {
       type: base.type, name: ov.name || base.name, coords: ov.coords || base.coords || null,
       desc: ov.desc || base.desc, image: ov.image || base.image || null,
-      photos: ov.photos || base.photos || (base.photoOld||base.photoNow ? [base.photoOld,base.photoNow].filter(Boolean) : null),
+      photos: [...((base.photos || (base.photoOld||base.photoNow ? [base.photoOld,base.photoNow].filter(Boolean) : [])) || []), ...(ov.extraPhotos||[])],
       canon: ov.canon !== undefined ? ov.canon : base.canon,
       related: Array.from(new Set([...(base.related||[]), ...(ov.extraRelated||[])]))
     };
@@ -829,7 +833,7 @@ function buildData(){
     data[id] = {
       type: a.type, name: ov.name || a.name, coords: ov.coords || a.coords || null,
       desc: ov.desc || a.desc, image: ov.image || a.image || null,
-      photos: ov.photos || a.photos || (a.photoOld||a.photoNow ? [a.photoOld,a.photoNow].filter(Boolean) : null),
+      photos: [...((a.photos || (a.photoOld||a.photoNow ? [a.photoOld,a.photoNow].filter(Boolean) : [])) || []), ...(ov.extraPhotos||[])],
       canon: ov.canon !== undefined ? ov.canon : (a.canon !== undefined ? a.canon : true),
       related: Array.from(new Set([...(a.related||[]), ...(ov.extraRelated||[])]))
     };
@@ -1098,7 +1102,7 @@ const panelContent = document.getElementById('panelContent');
 let trail = [];
 const pinIconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="9" r="2.6"/><path d="M12 21c-4-4-7-7.5-7-11a7 7 0 0 1 14 0c0 3.5-3 7-7 11z"/></svg>';
 
-function renderPhoto(photo){
+function renderPhoto(photo, entityId){
   if(!photo || !photo.url) return '';
   const creditBits = [];
   if(photo.credit) creditBits.push(escapeHtml(photo.credit));
@@ -1106,15 +1110,17 @@ function renderPhoto(photo){
   let creditLine = creditBits.join(' ／ ');
   if(photo.sourceUrl) creditLine += (creditLine?' ':'') + `<a href="${escapeAttr(photo.sourceUrl)}" target="_blank" rel="noopener noreferrer">出典</a>`;
   const label = photo.year || '';
+  const delBtn = photo.id ? `<button class="photo-del-btn" data-del-photo="${photo.id}" data-photo-entity="${entityId}" title="この写真を削除">×</button>` : '';
   return `<div class="photo-block">
+    ${delBtn}
     ${label ? `<div class="photo-label">${escapeHtml(label)}</div>` : ''}
     <img src="${escapeAttr(photo.url)}" alt="${escapeAttr(photo.caption||label||'')}">
     ${creditLine ? `<div class="photo-credit">${creditLine}</div>` : ''}
   </div>`;
 }
-function renderPhotoGallery(photos){
-  if(!photos || photos.length===0) return '';
-  return `<div class="photo-row">${photos.map(renderPhoto).join('')}</div>`;
+function renderPhotoGallery(photos, entityId){
+  const list = photos || [];
+  return `<div class="photo-row">${list.map(p=>renderPhoto(p, entityId)).join('')}<button class="add-photo-btn" id="addPhotoBtn">＋<br>写真を<br>追加</button></div>`;
 }
 
 function showEntity(id, opts={}){
@@ -1137,9 +1143,8 @@ function showEntity(id, opts={}){
     return `<span class="chip-wrap"><button class="chip" data-id="${rid}"><span class="dot dot-${entityClass(r)}"></span>${r.name}</button>${jump}</span>`;
   }).join('');
 
-  const imgHtml = (e.photos && e.photos.length)
-    ? renderPhotoGallery(e.photos)
-    : (e.image ? `<img class="entity-img" src="${escapeAttr(e.image)}" alt="">` : '');
+  const legacyImgHtml = (!e.photos || !e.photos.length) && e.image ? `<img class="entity-img" src="${escapeAttr(e.image)}" alt="">` : '';
+  const imgHtml = renderPhotoGallery(e.photos, id) + legacyImgHtml;
   const mapJumpHtml = (e.type==='place' && e.coords) ? `<button class="map-jump-main-btn" id="mapJumpBtn">${pinIconSvg} 地図で見る</button>` : '';
   const noteHtml = renderNoteSection(id);
   const journalHtml = e.type==='place' ? renderEntityJournalSection(id) : '';
@@ -1173,6 +1178,10 @@ function showEntity(id, opts={}){
   });
   document.getElementById('mapJumpBtn')?.addEventListener('click', ()=>goToMap(id));
   document.getElementById('editBtn').addEventListener('click', ()=>openEditModal(id));
+  document.getElementById('addPhotoBtn')?.addEventListener('click', ()=>openPhotoModal(id));
+  panelContent.querySelectorAll('[data-del-photo]').forEach(btn=>{
+    btn.addEventListener('click', ()=>deletePhoto(btn.dataset.photoEntity, btn.dataset.delPhoto));
+  });
   wireNoteSection(id);
   const addJBtn = document.getElementById('addEntityJournalBtn');
   if(addJBtn) addJBtn.addEventListener('click', ()=>openJournalModal({entityId:id, name:e.name, lat: e.coords?e.coords[0]:null, lng: e.coords?e.coords[1]:null}));
@@ -1388,7 +1397,56 @@ function openEditModal(targetId){
   });
 }
 
-// ---------- 訪問記録（ジャーナル） ----------
+function openPhotoModal(entityId){
+  const e = DATA[entityId];
+  let uploadedImageData = null;
+  modalBody.innerHTML = `
+    <h3>写真を追加 — ${e.name}</h3>
+    <div class="modal-sub">その場でギャラリーに追加されます。Wikimedia Commonsなどの画像を使う場合は、作者・ライセンス・出典URLもあわせて入力しておくと安心です。</div>
+    <div class="field"><label>画像</label>
+      <input type="file" class="file-input" id="ph-image-file" accept="image/*">
+      <div class="hint">アップロードすると自動で縮小・圧縮されます。もしくは外部URLを指定してください。</div>
+      <input type="text" id="ph-url" placeholder="https://..." style="margin-top:6px;">
+      <div class="image-preview" id="ph-image-preview"></div>
+    </div>
+    <div class="field"><label>年代（任意）</label><input type="text" id="ph-year" placeholder="例：1890年頃、2024年"></div>
+    <div class="field"><label>作者・提供元（任意）</label><input type="text" id="ph-credit" placeholder="例：Wellcome Collection"></div>
+    <div class="field"><label>ライセンス（任意）</label><input type="text" id="ph-license" placeholder="例：CC BY-SA 4.0、Public Domain"></div>
+    <div class="field"><label>出典URL（任意）</label><input type="text" id="ph-source" placeholder="https://commons.wikimedia.org/..."></div>
+    <div class="modal-actions"><button class="modal-cancel" id="ph-cancel">キャンセル</button><button class="modal-submit" id="ph-submit">追加する</button></div>`;
+  overlay.classList.add('open');
+  wireImageUpload('ph-image-file','ph-image-preview', d=>uploadedImageData=d);
+  document.getElementById('ph-cancel').addEventListener('click', closeModal);
+  document.getElementById('ph-submit').addEventListener('click', async ()=>{
+    const url = uploadedImageData || document.getElementById('ph-url').value.trim();
+    if(!url){ showToast('画像をアップロードするかURLを入力してください。'); return; }
+    const photo = {
+      id: 'ph-'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+      url,
+      year: document.getElementById('ph-year').value.trim(),
+      credit: document.getElementById('ph-credit').value.trim(),
+      license: document.getElementById('ph-license').value.trim(),
+      sourceUrl: document.getElementById('ph-source').value.trim()
+    };
+    overrides[entityId] = overrides[entityId] || {};
+    overrides[entityId].extraPhotos = overrides[entityId].extraPhotos || [];
+    overrides[entityId].extraPhotos.push(photo);
+    await safeSet('p-overrides', overrides);
+    DATA = buildData();
+    closeModal(); showToast('写真を追加しました。');
+    showEntity(entityId, {fromTrail:true});
+  });
+}
+
+async function deletePhoto(entityId, photoId){
+  if(!confirm('この写真を削除します。よろしいですか？')) return;
+  overrides[entityId] = overrides[entityId] || {};
+  overrides[entityId].extraPhotos = (overrides[entityId].extraPhotos || []).filter(p=>p.id!==photoId);
+  await safeSet('p-overrides', overrides);
+  DATA = buildData();
+  showToast('削除しました。');
+  showEntity(entityId, {fromTrail:true});
+}
 function renderEntityJournalSection(entityId){
   const list = journal.filter(j=>j.entityId===entityId).slice().sort((a,b)=>b.createdAt-a.createdAt);
   const html = list.length ? list.map(j=>renderJournalCard(j)).join('') : '<p class="empty-msg">まだ記録はありません。</p>';
