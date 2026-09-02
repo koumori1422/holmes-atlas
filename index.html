@@ -7,8 +7,10 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Crimson+Pro:wght@400;500;600&display=swap">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Crimson+Pro:wght@400;500;600&display=swap');
 
 :root{
   --ink:#1c2430; --ink-2:#232d3c;
@@ -849,11 +851,14 @@ async function safeSet(key, value){
   }catch(e){ console.error(e); showToast('保存に失敗しました。'); return false; }
 }
 async function loadAll(){
-  overrides = (await safeGet('p-overrides')) || {};
-  additions = (await safeGet('p-additions')) || {};
-  personalNotes = (await safeGet('p-notes')) || {};
-  journal = (await safeGet('p-journal')) || [];
-  customAliases = (await safeGet('p-aliases')) || {};
+  const [ov, add, notes, jour, aliases] = await Promise.all([
+    safeGet('p-overrides'), safeGet('p-additions'), safeGet('p-notes'), safeGet('p-journal'), safeGet('p-aliases')
+  ]);
+  overrides = ov || {};
+  additions = add || {};
+  personalNotes = notes || {};
+  journal = jour || [];
+  customAliases = aliases || {};
 }
 
 function buildData(){
@@ -1356,7 +1361,7 @@ function renderPhoto(photo, entityId){
   return `<div class="photo-block">
     ${delBtn}
     ${label ? `<div class="photo-label">${escapeHtml(label)}</div>` : ''}
-    <img src="${escapeAttr(photo.url)}" alt="${escapeAttr(photo.caption||label||'')}">
+    <img src="${escapeAttr(photo.url)}" alt="${escapeAttr(photo.caption||label||'')}" loading="lazy">
     ${creditLine ? `<div class="photo-credit">${creditLine}</div>` : ''}
   </div>`;
 }
@@ -1389,7 +1394,7 @@ function showEntity(id, opts={}){
     return `<span class="chip-wrap"><button class="chip" data-id="${rid}"><span class="dot dot-${entityClass(r)}"></span>${r.name}</button>${jump}</span>`;
   }).join('');
 
-  const legacyImgHtml = (!e.photos || !e.photos.length) && e.image ? `<img class="entity-img" src="${escapeAttr(e.image)}" alt="">` : '';
+  const legacyImgHtml = (!e.photos || !e.photos.length) && e.image ? `<img class="entity-img" src="${escapeAttr(e.image)}" alt="" loading="lazy">` : '';
   const imgHtml = renderPhotoGallery(e.photos, id) + legacyImgHtml;
   const gmapsIconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>';
   const mapJumpHtml = (e.type==='place' && e.coords)
