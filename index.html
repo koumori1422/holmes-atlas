@@ -947,7 +947,24 @@ async function nominatimSearchFallback(query){
     return data.map(d=>({lat: parseFloat(d.lat), lon: parseFloat(d.lon), display_name: d.display_name, placeType: [d.type, d.class].filter(Boolean)}));
   }catch(e){ return null; }
 }
+// カタカナ表記が地名データベースに登録されていないケース向けの、独自の対応辞書。
+// 「カタカナ検索で見つからなかった地名」を見つけるたびにここへ追加していく。
+const KATAKANA_PLACE_ALIASES = {
+  "オックスフォードストリート": "Oxford Street, London",
+  "ウーリッジ": "Woolwich, London",
+};
+function normalizeForAlias(s){
+  return s.replace(/[・･\s]/g,'');
+}
+function resolveKatakanaAlias(query){
+  return KATAKANA_PLACE_ALIASES[normalizeForAlias(query)] || null;
+}
 async function geocodeSearch(query){
+  const alias = resolveKatakanaAlias(query);
+  if(alias){
+    const aliasResults = await geocodeSearchOnce(alias, null);
+    if(aliasResults && aliasResults.length > 0) return aliasResults;
+  }
   const jaResults = await geocodeSearchOnce(query, 'ja');
   if(jaResults && jaResults.length > 0) return jaResults;
   // 日本語優先で見つからなければ、言語指定なし（英語表記優先）で再検索
