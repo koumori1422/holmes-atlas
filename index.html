@@ -968,7 +968,21 @@ function normalizeForAlias(s){
 }
 function resolveKatakanaAlias(query){
   const key = normalizeForAlias(query);
-  return customAliases[key] || KATAKANA_PLACE_ALIASES[key] || null;
+  const merged = Object.assign({}, KATAKANA_PLACE_ALIASES, customAliases);
+  if(merged[key]) return merged[key];
+  // 前方一致（例：「オックスフォードスト」→「オックスフォードストリート」）
+  let best = null, bestLen = -1;
+  Object.keys(merged).forEach(k=>{
+    if((k.startsWith(key) || key.startsWith(k)) && k.length > bestLen){
+      best = merged[k]; bestLen = k.length;
+    }
+  });
+  if(best) return best;
+  // あいまい一致（多少の文字違いを許容）
+  for(const k of Object.keys(merged)){
+    if(fuzzyMatch(k, query)) return merged[k];
+  }
+  return null;
 }
 async function saveCustomAlias(query, englishName){
   const key = normalizeForAlias(query);
