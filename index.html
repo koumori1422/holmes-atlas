@@ -89,6 +89,12 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .badge-pastiche{background:var(--pastiche);}
 .panel-body h3{font-family:'Playfair Display',serif;font-weight:600;font-size:1.4rem;margin:2px 0 12px;color:var(--ink);}
 .panel-body img.entity-img{width:100%;border-radius:3px;margin-bottom:14px;border:1px solid var(--line);}
+.photo-row{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.photo-block{flex:1;min-width:140px;}
+.photo-block img{width:100%;height:150px;object-fit:cover;border-radius:3px;border:1px solid var(--line);display:block;}
+.photo-block .photo-label{font-size:.72rem;font-weight:600;color:var(--slate);margin-bottom:3px;}
+.photo-credit{font-size:.68rem;color:var(--slate);line-height:1.4;margin-top:3px;}
+.photo-credit a{color:var(--slate);}
 .panel-body p{font-size:.96rem;line-height:1.75;margin:0 0 18px;}
 .related h4{font-weight:600;font-size:.83rem;color:var(--slate);margin:0 0 8px;border-top:1px solid var(--line);padding-top:14px;}
 .chip-row{display:flex;flex-wrap:wrap;gap:7px;}
@@ -245,6 +251,7 @@ const MAPTILER_HISTORIC_TILE_ID = 'uk-osgb10k1888';
 // ---------- ベースデータ（公開パイロット版と同じ内容を流用） ----------
 const SEED = {
   "baker-street": {type:"place", name:"221Bベーカー街", coords:[51.5237,-0.1585], image:null,
+    photoNow:{url:"https://commons.wikimedia.org/wiki/Special:FilePath/Front_view_of_221B_Baker_Street.jpg", credit:"Kaartic", license:"CC BY-SA 4.0", sourceUrl:"https://commons.wikimedia.org/wiki/File:Front_view_of_221B_Baker_Street.jpg"},
     desc:"ホームズとワトスンが1881年から共同生活を送った住居。ベーカー街自体は実在するが、221Bという番地は物語のために作られたもの。家主はハドスン夫人。",
     related:["holmes","watson","mrs-hudson","study-in-scarlet"]},
   "st-barts": {type:"place", name:"セント・バーソロミュー病院", coords:[51.5174,-0.1012], image:null,
@@ -734,6 +741,8 @@ function buildData(){
     data[id] = {
       type: base.type, name: ov.name || base.name, coords: ov.coords || base.coords || null,
       desc: ov.desc || base.desc, image: ov.image || base.image || null,
+      photoOld: ov.photoOld || base.photoOld || null,
+      photoNow: ov.photoNow || base.photoNow || null,
       canon: ov.canon !== undefined ? ov.canon : base.canon,
       related: Array.from(new Set([...(base.related||[]), ...(ov.extraRelated||[])]))
     };
@@ -743,6 +752,8 @@ function buildData(){
     data[id] = {
       type: a.type, name: ov.name || a.name, coords: ov.coords || a.coords || null,
       desc: ov.desc || a.desc, image: ov.image || a.image || null,
+      photoOld: ov.photoOld || a.photoOld || null,
+      photoNow: ov.photoNow || a.photoNow || null,
       canon: ov.canon !== undefined ? ov.canon : (a.canon !== undefined ? a.canon : true),
       related: Array.from(new Set([...(a.related||[]), ...(ov.extraRelated||[])]))
     };
@@ -982,6 +993,20 @@ const panelContent = document.getElementById('panelContent');
 let trail = [];
 const pinIconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="9" r="2.6"/><path d="M12 21c-4-4-7-7.5-7-11a7 7 0 0 1 14 0c0 3.5-3 7-7 11z"/></svg>';
 
+function renderPhoto(photo, label){
+  if(!photo || !photo.url) return '';
+  const creditBits = [];
+  if(photo.credit) creditBits.push(escapeHtml(photo.credit));
+  if(photo.license) creditBits.push(escapeHtml(photo.license));
+  let creditLine = creditBits.join(' ／ ');
+  if(photo.sourceUrl) creditLine += (creditLine?' ':'') + `<a href="${escapeAttr(photo.sourceUrl)}" target="_blank" rel="noopener noreferrer">出典</a>`;
+  return `<div class="photo-block">
+    <div class="photo-label">${label}</div>
+    <img src="${escapeAttr(photo.url)}" alt="${escapeAttr(label)}">
+    ${creditLine ? `<div class="photo-credit">${creditLine}</div>` : ''}
+  </div>`;
+}
+
 function showEntity(id, opts={}){
   const e = DATA[id];
   if(!e) return;
@@ -1002,7 +1027,9 @@ function showEntity(id, opts={}){
     return `<span class="chip-wrap"><button class="chip" data-id="${rid}"><span class="dot dot-${entityClass(r)}"></span>${r.name}</button>${jump}</span>`;
   }).join('');
 
-  const imgHtml = e.image ? `<img class="entity-img" src="${escapeAttr(e.image)}" alt="">` : '';
+  const imgHtml = (e.photoOld || e.photoNow)
+    ? `<div class="photo-row">${renderPhoto(e.photoOld,'かつて')}${renderPhoto(e.photoNow,'現在')}</div>`
+    : (e.image ? `<img class="entity-img" src="${escapeAttr(e.image)}" alt="">` : '');
   const mapJumpHtml = (e.type==='place' && e.coords) ? `<button class="map-jump-main-btn" id="mapJumpBtn">${pinIconSvg} 地図で見る</button>` : '';
   const noteHtml = renderNoteSection(id);
   const journalHtml = e.type==='place' ? renderEntityJournalSection(id) : '';
