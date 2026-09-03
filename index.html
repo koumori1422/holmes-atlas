@@ -60,6 +60,9 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .map-status{position:absolute;top:12px;left:12px;z-index:500;background:var(--ink-2);color:var(--fog);border:1px solid var(--line);padding:6px 12px;border-radius:3px;font-size:.8rem;display:none;}
 .map-status.show{display:block;}
 .map-search{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:600;width:min(380px,82%);}
+.stage:has(.panel.open) .map-search,
+.stage:has(.panel.open) .locate-map-btn,
+.stage:has(.panel.open) .historic-toggle-btn{display:none;}
 .map-search-row{display:flex;gap:6px;box-shadow:0 2px 8px rgba(0,0,0,.25);border-radius:3px;}
 .map-search-row input{flex:1;padding:9px 12px;border:1px solid var(--line);border-radius:3px 0 0 3px;font-size:.9rem;background:#fff;color:var(--charcoal);}
 .map-search-row button{background:var(--brass);border:none;color:#fff;padding:0 16px;border-radius:0;cursor:pointer;font-size:.85rem;}
@@ -1380,7 +1383,7 @@ function showEntity(id, opts={}){
   if(e.type==='place' && e.coords){
     const m0 = markers[id];
     if(m0 && markerClusterGroup.hasLayer(m0)) markerClusterGroup.zoomToShowLayer(m0, ()=>{});
-    else map.flyTo(e.coords, zoomForEntity(id), {duration:0.7});
+    else flyToAvoidingPanel(e.coords, zoomForEntity(id));
   }
 
   const trailHtml = trail.map((tid,i)=>{
@@ -1466,6 +1469,13 @@ function showEntity(id, opts={}){
 }
 document.getElementById('panelClose').addEventListener('click', ()=>panel.classList.remove('open'));
 
+function flyToAvoidingPanel(latlng, zoom){
+  const panelWidth = panel.offsetWidth;
+  const targetPoint = map.project(latlng, zoom);
+  const shiftedPoint = targetPoint.add(L.point(panelWidth/2, 0));
+  const shiftedLatLng = map.unproject(shiftedPoint, zoom);
+  map.flyTo(shiftedLatLng, zoom, {duration:0.7});
+}
 function goToMap(id){
   const e = DATA[id];
   if(!e || !e.coords) return;
