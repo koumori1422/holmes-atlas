@@ -48,6 +48,8 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .index-link-desc{display:block;font-size:.72rem;opacity:.6;margin-top:2px;}
 .alias-list-item{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 16px;font-size:.82rem;color:var(--fog);}
 .alias-list-empty{padding:8px 16px;font-size:.78rem;opacity:.55;font-style:italic;}
+.site-license{padding:16px;font-size:.68rem;color:var(--fog);opacity:.6;line-height:1.7;border-top:1px solid var(--line);margin-top:10px;}
+.site-license a{color:var(--brass-light);}
 .fav-subheader{padding:8px 16px 4px;font-size:.7rem;color:var(--brass-light);font-weight:600;}
 .alias-add-standalone-btn{display:block;width:calc(100% - 24px);margin:4px 12px 8px;font-size:.78rem;background:var(--teal);border:none;color:#fff;padding:6px 0;border-radius:3px;cursor:pointer;}
 .alias-delete-btn{background:none;border:1px solid var(--line);color:var(--fog);width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:.78rem;flex:none;line-height:1;padding:0;}
@@ -258,6 +260,7 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
       <button class="hbtn primary" id="addEntityBtn">＋ 新しい項目を追加</button>
       <button class="hbtn" id="addJournalBtn">＋ 訪問記録を追加</button>
       <button class="hbtn" id="timelineToggle">タイムライン</button>
+      <button class="hbtn" id="exportBtn">データをエクスポート</button>
     </div>
     <button class="hbtn menu-toggle" id="menuToggle">☰ メニュー</button>
   </div>
@@ -1429,6 +1432,7 @@ function renderIndex(){
   }
   html += `</div></div>`;
 
+  html += `<div class="site-license">本サイトの説明文は <a href="https://creativecommons.org/licenses/by/4.0/deed.ja" target="_blank" rel="noopener noreferrer">CC BY 4.0</a> で公開しています（出典を明記すれば自由にご利用いただけます）。画像は個別に出典・ライセンスを表示しています。</div>`;
   indexEl.innerHTML = html;
   indexEl.querySelectorAll('.index-item[data-id]').forEach(btn=>btn.addEventListener('click', ()=>showEntity(btn.dataset.id)));
   document.getElementById('aliasAddStandaloneBtn')?.addEventListener('click', (ev)=>{ ev.stopPropagation(); openAliasModal(); });
@@ -1833,6 +1837,56 @@ function openEditModal(targetId){
     showEntity(targetId, {fromTrail:true});
   });
 }
+
+function downloadFile(filename, content, mime){
+  const blob = new Blob([content], {type: mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function csvEscape(v){
+  if(v===null || v===undefined) return '';
+  const s = String(v);
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+}
+function exportAsJSON(){
+  const out = {};
+  Object.keys(DATA).forEach(id=>{ out[id] = {id, ...DATA[id]}; });
+  downloadFile('holmes-atlas-data.json', JSON.stringify(out, null, 2), 'application/json');
+}
+function exportAsCSV(){
+  const headers = ['id','type','name','desc','lat','lng','canon_or_pastiche','relevance','related'];
+  const rows = [headers.join(',')];
+  Object.keys(DATA).forEach(id=>{
+    const e = DATA[id];
+    const row = [
+      id, e.type, e.name, e.desc,
+      e.coords ? e.coords[0] : '', e.coords ? e.coords[1] : '',
+      e.type==='work' ? (e.canon ? '正典' : '正典外') : '',
+      e.type==='place' ? (e.relevance || 'core') : '',
+      (e.related||[]).join(';')
+    ].map(csvEscape);
+    rows.push(row.join(','));
+  });
+  downloadFile('holmes-atlas-data.csv', '\uFEFF' + rows.join('\r\n'), 'text/csv;charset=utf-8;');
+}
+function openExportModal(){
+  modalBody.innerHTML = `
+    <h3>データをエクスポート</h3>
+    <div class="modal-sub">現在表示されている全項目（地名・人物・作品・用語）をダウンロードします。研究などにご自由にお使いください。説明文は CC BY 4.0（表示のみ条件）で公開しています。</div>
+    <div class="modal-actions" style="justify-content:flex-start;flex-wrap:wrap;">
+      <button class="modal-submit" id="export-json-btn">JSON形式でダウンロード</button>
+      <button class="modal-submit" id="export-csv-btn">CSV形式でダウンロード</button>
+      <button class="modal-cancel" id="export-cancel">閉じる</button>
+    </div>`;
+  overlay.classList.add('open');
+  document.getElementById('export-cancel').addEventListener('click', closeModal);
+  document.getElementById('export-json-btn').addEventListener('click', ()=>{ exportAsJSON(); closeModal(); showToast('JSONファイルをダウンロードしました。'); });
+  document.getElementById('export-csv-btn').addEventListener('click', ()=>{ exportAsCSV(); closeModal(); showToast('CSVファイルをダウンロードしました。'); });
+}
+document.getElementById('exportBtn').addEventListener('click', openExportModal);
 
 function openAliasModal(){
   modalBody.innerHTML = `
