@@ -1386,7 +1386,9 @@ function showEntity(id, opts={}){
     const zoom = zoomForEntity(id);
     if(m0 && markerClusterGroup.hasLayer(m0)){
       markerClusterGroup.zoomToShowLayer(m0, ()=>{
-        lastShownPlace = {coords: e.coords, zoom: map.getZoom()};
+        const finalZoom = map.getZoom();
+        flyToAvoidingPanel(e.coords, finalZoom);
+        lastShownPlace = {coords: e.coords, zoom: finalZoom};
       });
     } else {
       flyToAvoidingPanel(e.coords, zoom);
