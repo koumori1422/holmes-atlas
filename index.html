@@ -96,6 +96,8 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .holmes-cluster-icon{background:transparent;}
 .cluster-icon-inner{width:34px;height:34px;border-radius:50%;background:var(--brass);border:2px solid var(--parchment);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Crimson Pro',serif;font-weight:700;font-size:.92rem;box-shadow:0 1px 4px rgba(0,0,0,.5);}
 .leaflet-holmes-icon svg{width:14px;height:14px;}
+.leaflet-holmes-icon-peripheral{background:var(--slate);opacity:.8;border:1.5px solid var(--parchment);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.4);}
+.leaflet-holmes-icon-peripheral svg{width:9px;height:9px;}
 .leaflet-holmes-special-icon{background:var(--burgundy);border:3px solid var(--brass-light);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 4px rgba(171,131,71,.35),0 2px 8px rgba(0,0,0,.6);}
 .leaflet-holmes-special-icon svg{width:19px;height:19px;}
 .place-label-special{background:var(--burgundy)!important;color:#fff!important;border:2px solid var(--brass-light)!important;font-family:'Crimson Pro',serif;font-weight:700!important;font-size:.82rem!important;padding:4px 10px!important;border-radius:2px;box-shadow:0 2px 8px rgba(0,0,0,.5)!important;}
@@ -124,6 +126,7 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .badge-place{background:var(--brass);} .badge-person{background:var(--burgundy);}
 .badge-work{background:var(--teal);} .badge-term{background:var(--slate);}
 .badge-pastiche{background:var(--pastiche);}
+.badge-peripheral{background:none;border:1px solid var(--slate);color:var(--slate)!important;}
 .panel-body h3{font-family:'Playfair Display',serif;font-weight:600;font-size:1.4rem;margin:2px 0 12px;color:var(--ink);}
 .panel-body img.entity-img{width:100%;border-radius:3px;margin-bottom:14px;border:1px solid var(--line);}
 .photo-row{display:flex;gap:10px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px;}
@@ -276,6 +279,7 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
     </button>
     <button class="historic-toggle-btn" id="historicToggleBtn" title="ホームズ時代の古地図に切り替え">🗺️ 古地図</button>
+    <button class="historic-toggle-btn" id="coreOnlyBtn" title="正典・パスティーシュ直結の地点だけ表示" style="right:150px;">核心のみ表示</button>
     <div class="nearby-panel" id="nearbyPanel"></div>
     <div class="panel" id="panel">
       <button class="panel-close" id="panelClose">×</button>
@@ -338,23 +342,23 @@ const SEED = {
   "sussex": {type:"place", name:"サセックス", coords:[50.9333,0.0833], image:null,
     desc:"正典でもホームズが養蜂業を営みながら引退生活を送ったとされる地（『最後の挨拶』の前書きや『獅子のたてがみ』などで言及）。ローリー・R・キングのパスティーシュ・シリーズでは、この引退後のホームズと少女メアリー・ラッセルとの出会いが描かれる。",
     related:["beekeepers-apprentice","holmes","mary-russell","lions-mane-work"]},
-  "meiringen": {type:"place", name:"マイリンゲン（スイス）", coords:[46.7296,8.1758], image:null,
+  "meiringen": {type:"place", relevance:"peripheral", name:"マイリンゲン（スイス）", coords:[46.7296,8.1758], image:null,
     photos:[{url:"https://commons.wikimedia.org/wiki/Special:FilePath/AufSherlocksSpuren5.JPG", year:"2007年", credit:"Yesuitus2001", license:"CC BY-SA 2.5", sourceUrl:"https://commons.wikimedia.org/wiki/File:AufSherlocksSpuren5.JPG"}],
     desc:"ライヘンバッハの滝の麓にある町。町の広場には世界初のホームズ像とホームズ記念館があり、通りの名前にも英国風のものが多い。",
     related:["reichenbach","holmes","watson","final-problem"]},
-  "karuizawa": {type:"place", name:"軽井沢（追分、日本）", coords:[36.3395,138.5934], image:null,
+  "karuizawa": {type:"place", relevance:"peripheral", name:"軽井沢（追分、日本）", coords:[36.3395,138.5934], image:null,
     desc:"長野県軽井沢町追分の庚申塚公園に立つホームズ像。翻訳家・延原謙がこの地に別荘を構えて正典の翻訳を手がけたことにちなみ、1988年に建立された。",
     related:["holmes","jshc-term","japan-holmes-spots-term"]},
-  "bam-kamakura": {type:"place", name:"英国アンティーク博物館 BAM鎌倉", coords:[35.3232,139.5538], image:null,
+  "bam-kamakura": {type:"place", relevance:"peripheral", name:"英国アンティーク博物館 BAM鎌倉", coords:[35.3232,139.5538], image:null,
     desc:"2022年9月、鎌倉・若宮大路に開館した英国アンティーク博物館。3階には「シャーロック・ホームズ博物館ロンドン」の協力を得て再現された『シャーロック・ホームズの部屋』がある。",
     related:["holmes","conan-doyle","japan-holmes-spots-term"]},
-  "eikoku-kan-kobe": {type:"place", name:"英国館（神戸北野異人館街）", coords:[34.6989,135.1945], image:null,
+  "eikoku-kan-kobe": {type:"place", relevance:"peripheral", name:"英国館（神戸北野異人館街）", coords:[34.6989,135.1945], image:null,
     desc:"1909年建築の異人館。2階には日本で最初に作られたとされる『シャーロック・ホームズの部屋』が再現されている。",
     related:["holmes","japan-holmes-spots-term"]},
-  "edinburgh": {type:"place", name:"エディンバラ", coords:[55.9575,-3.1878], image:null,
+  "edinburgh": {type:"place", relevance:"peripheral", name:"エディンバラ", coords:[55.9575,-3.1878], image:null,
     desc:"作者アーサー・コナン・ドイルの生誕地。新市街のピカデリー・プレイス・ラウンドアバウト付近にホームズ像が立つ。",
     related:["conan-doyle","holmes"]},
-  "baker-street-statue": {type:"place", name:"ベーカー街駅前のホームズ像（ロンドン）", coords:[51.5226,-0.1571], image:null,
+  "baker-street-statue": {type:"place", relevance:"peripheral", name:"ベーカー街駅前のホームズ像（ロンドン）", coords:[51.5226,-0.1571], image:null,
     desc:"地下鉄ベーカー街駅前に立つ、彫刻家ジョン・ダブルディによる高さ約3メートルのブロンズ像（1999年設置）。",
     related:["baker-street","holmes","baker-street-station"]},
   "baker-street-station": {type:"place", name:"地下鉄ベーカー街駅", coords:[51.5228,-0.1573], image:null,
@@ -364,13 +368,13 @@ const SEED = {
   "moriartys-pub": {type:"place", name:"パブ「モリアーティ」", coords:[51.5227,-0.1569], image:null,
     desc:"ベーカー街駅構内にあった実在のパブ。ホームズ最大の宿敵、モリアーティ教授の名を冠していた。【※現在は閉店しており、跡地に痕跡は残っていない】",
     related:["moriarty","baker-street-station"]},
-  "sherlock-holmes-hotel": {type:"place", name:"シャーロック・ホームズ・ホテル", coords:[51.5203,-0.1573], image:null,
+  "sherlock-holmes-hotel": {type:"place", relevance:"peripheral", name:"シャーロック・ホームズ・ホテル", coords:[51.5203,-0.1573], image:null,
     desc:"ベーカー街108番地にある実在のホテル。ロビーや客室にホームズをモチーフにした装飾が施されている。【※現在は「Holmes Hotel London」に改称・リブランドされている（閉店はしていない）】",
     related:["baker-street","holmes"]},
-  "wallace-collection": {type:"place", name:"ウォーレス・コレクション", coords:[51.5175,-0.1531], image:null,
+  "wallace-collection": {type:"place", relevance:"peripheral", name:"ウォーレス・コレクション", coords:[51.5175,-0.1531], image:null,
     desc:"マンチェスター・スクエアにある国立美術館。ベーカー街から徒歩圏内。",
     related:["baker-street","holmes"]},
-  "wigmore-street-post-office": {type:"place", name:"ウイグモア街郵便局", coords:[51.5165,-0.1508], image:null,
+  "wigmore-street-post-office": {type:"place", relevance:"peripheral", name:"ウイグモア街郵便局", coords:[51.5165,-0.1508], image:null,
     desc:"ベーカー街近くのウイグモア街にある郵便局。",
     related:["baker-street","holmes"]},
   "langham-hotel": {type:"place", name:"ランガム・ホテル", coords:[51.5177,-0.1436], image:null,
@@ -402,7 +406,7 @@ const SEED = {
     photos:[{url:"https://commons.wikimedia.org/wiki/Special:FilePath/Charing_Cross_Station_-_geograph.org.uk_-_4304382.jpg", year:"2014年", credit:"N Chadwick", license:"CC BY-SA 2.0", sourceUrl:"https://commons.wikimedia.org/wiki/File:Charing_Cross_Station_-_geograph.org.uk_-_4304382.jpg"}],
     desc:"ロンドンの中心地とされる交差点および駅。",
     related:["holmes","scotland-yard"]},
-  "sherlock-holmes-pub": {type:"place", name:"パブ「ザ・シャーロック・ホームズ」", coords:[51.5079,-0.1257], image:null,
+  "sherlock-holmes-pub": {type:"place", relevance:"peripheral", name:"パブ「ザ・シャーロック・ホームズ」", coords:[51.5079,-0.1257], image:null,
     photos:[{url:"https://commons.wikimedia.org/wiki/Special:FilePath/Sherlock_Holmes%2C_Charing_Cross%2C_WC2.jpg", year:"2025年", credit:"Ewan-M", license:"CC BY-SA 4.0", sourceUrl:"https://commons.wikimedia.org/wiki/File:Sherlock_Holmes%2C_Charing_Cross%2C_WC2.jpg"}],
     desc:"ノーサンバーランド街にある実在のパブ。店内二階にホームズの部屋を再現した展示がある。",
     related:["holmes","watson"]},
@@ -423,14 +427,14 @@ const SEED = {
   "montague-street": {type:"place", name:"モンタギュー街", coords:[51.5205,-0.1256], image:null,
     desc:"正典『マスグレーヴ家の儀式』で言及される、ホームズが開業したての探偵として暮らしていたとされる通り。",
     related:["british-museum","holmes","musgrave-ritual","gloria-scott-work"]},
-  "museum-tavern": {type:"place", name:"パブ「ミュージアム・タヴァーン」", coords:[51.5188,-0.1265], image:null,
+  "museum-tavern": {type:"place", relevance:"peripheral", name:"パブ「ミュージアム・タヴァーン」", coords:[51.5188,-0.1265], image:null,
     photos:[{url:"https://commons.wikimedia.org/wiki/Special:FilePath/Museum_Tavern%2C_49_Great_Russell_Street_-_geograph.org.uk_-_1156588.jpg", year:"2009年", credit:"Oxyman", license:"CC BY-SA 2.0", sourceUrl:"https://commons.wikimedia.org/wiki/File:Museum_Tavern%2C_49_Great_Russell_Street_-_geograph.org.uk_-_1156588.jpg"}],
     desc:"大英博物館の向かいにある実在のパブ。",
     related:["british-museum"]},
   "royal-albert-hall": {type:"place", name:"アルバート・ホール", coords:[51.5009,-0.1773], image:null,
     desc:"1871年開館の円形コンサートホール。",
     related:["holmes"]},
-  "crowborough": {type:"place", name:"クロウボロ", coords:[51.0524,0.1547], image:null,
+  "crowborough": {type:"place", relevance:"peripheral", name:"クロウボロ", coords:[51.0524,0.1547], image:null,
     desc:"東サセックスの町。コナン・ドイルが晩年を過ごした邸宅「ウィンドルシャム」があった地。",
     related:["conan-doyle","his-last-bow-work"]},
 
@@ -533,7 +537,7 @@ const SEED = {
   "canterbury-station": {type:"place", name:"カンタベリー鉄道駅", coords:[51.2745,1.0730], image:null,
     desc:"『最後の事件』で、モリアーティに追われるホームズとワトスンが途中下車してやり過ごしたとされる駅。ロンドンから離れた逃避行の緊迫感を伝える地点。",
     related:["final-problem","holmes","watson","moriarty"]},
-  "portsmouth-doyle": {type:"place", name:"ポーツマス", coords:[50.7989,-1.0912], image:null,
+  "portsmouth-doyle": {type:"place", relevance:"peripheral", name:"ポーツマス", coords:[50.7989,-1.0912], image:null,
     desc:"コナン・ドイルが医師として開業していた町。『緋色の研究』『海軍条約文書事件』『最後の挨拶』などにも言及があり、ポーツマス博物館にはシャーロキアン研究家リチャード・ランセリン・グリーン氏のコレクションが展示されている。",
     related:["conan-doyle","holmes","naval-treaty-work"]},
   "euston-station": {type:"place", name:"ユーストン駅", coords:[51.5282,-0.1337], image:null,
@@ -565,7 +569,7 @@ const SEED = {
   "lauriston-gardens-brixton": {type:"place", name:"ブリクストン（ローリストン・ガーデンズ）", coords:[51.4613,-0.1156], image:null,
     desc:"『緋色の研究』で、ホームズとワトスンが最初に手がけた事件の殺人現場となった通り（架空の番地）があるとされる地区。二人の探偵コンビとしての第一歩を描く記念すべき舞台。",
     related:["holmes","watson","study-in-scarlet"]},
-  "baskerville-hall-hotel": {type:"place", name:"バスカヴィル・ホール・ホテル（ヘレフォードシャー／ウェールズ境）", coords:[52.0730,-3.1400], image:null,
+  "baskerville-hall-hotel": {type:"place", relevance:"peripheral", name:"バスカヴィル・ホール・ホテル（ヘレフォードシャー／ウェールズ境）", coords:[52.0730,-3.1400], image:null,
     desc:"ドイルが「バスカヴィル」という名を着想したとされる、クライロ近郊の実在する屋敷（現在はホテル）。物語の舞台自体はダートムーアに設定されているが、名前の由来はこの地とされる。",
     related:["hound-baskervilles","holmes","conan-doyle"]},
   "aldershot-crooked-man": {type:"place", name:"オルダーショット（ハンプシャー州）", coords:[51.2480,-0.7590], image:null,
@@ -599,13 +603,13 @@ const SEED = {
     related:["holmes","watson","beryl-coronet-work"]},
   "ronald-adairs-park-lane": {type:"place", name:"ロナルド・アデア邸跡（パーク・レーン）", coords:[51.5121,-0.1573], image:null,
     related:["holmes","empty-house-camden-house","empty-house-work"]},
-  "conan-doyle-surgery-wimpole": {type:"place", name:"コナン・ドイルの診療所（アッパー・ウィンポール街）", coords:[51.5205,-0.1494], image:null,
+  "conan-doyle-surgery-wimpole": {type:"place", relevance:"peripheral", name:"コナン・ドイルの診療所（アッパー・ウィンポール街）", coords:[51.5205,-0.1494], image:null,
     desc:"コナン・ドイルが眼科医として短期間開業していた場所。患者がほとんど来なかったため、その時間を執筆に充てたという逸話で知られる。ウェストミンスター市による記念プレートが建物に掲げられている。",
     related:["conan-doyle"]},
-  "conan-doyle-house-tennison-road": {type:"place", name:"コナン・ドイルの旧居（テニソン・ロード）", coords:[51.3951,-0.0806], image:null,
+  "conan-doyle-house-tennison-road": {type:"place", relevance:"peripheral", name:"コナン・ドイルの旧居（テニソン・ロード）", coords:[51.3951,-0.0806], image:null,
     desc:"サウス・ノーウッドにあるコナン・ドイルのかつての自宅。1973年にブルー・プラーク（歴史的建造物に設置される記念プレート）が取り付けられている。",
     related:["conan-doyle"]},
-  "sherlock-holmes-frieze-odeon": {type:"place", name:"オデオン座のホームズ・フリーズ（コヴェント・ガーデン）", coords:[51.5142,-0.1281], image:null,
+  "sherlock-holmes-frieze-odeon": {type:"place", relevance:"peripheral", name:"オデオン座のホームズ・フリーズ（コヴェント・ガーデン）", coords:[51.5142,-0.1281], image:null,
     desc:"1931年開館の映画館（旧セヴィル劇場）の壁面に施された装飾彫刻（フリーズ）。彫刻家ギルバート・ベイズの手によるもので、ロンドンに現存する最古のホームズ彫像（モリアーティとみられる人物も一緒に）とされている。",
     related:["holmes","covent-garden"]},
 
@@ -879,6 +883,7 @@ function buildData(){
       desc: ov.desc || base.desc, image: ov.image || base.image || null,
       photos: [...((base.photos || (base.photoOld||base.photoNow ? [base.photoOld,base.photoNow].filter(Boolean) : [])) || []), ...(ov.extraPhotos||[])],
       canon: ov.canon !== undefined ? ov.canon : base.canon,
+      relevance: ov.relevance || base.relevance || 'core',
       related: Array.from(new Set([...(base.related||[]), ...(ov.extraRelated||[])]))
     };
   });
@@ -889,6 +894,7 @@ function buildData(){
       desc: ov.desc || a.desc, image: ov.image || a.image || null,
       photos: [...((a.photos || (a.photoOld||a.photoNow ? [a.photoOld,a.photoNow].filter(Boolean) : [])) || []), ...(ov.extraPhotos||[])],
       canon: ov.canon !== undefined ? ov.canon : (a.canon !== undefined ? a.canon : true),
+      relevance: ov.relevance || a.relevance || 'core',
       related: Array.from(new Set([...(a.related||[]), ...(ov.extraRelated||[])]))
     };
   });
@@ -1212,6 +1218,15 @@ historicToggleBtn.addEventListener('click', ()=>{
   }
 });
 
+const coreOnlyBtn = document.getElementById('coreOnlyBtn');
+coreOnlyBtn.addEventListener('click', ()=>{
+  coreOnlyFilter = !coreOnlyFilter;
+  coreOnlyBtn.classList.toggle('active', coreOnlyFilter);
+  coreOnlyBtn.textContent = coreOnlyFilter ? '全て表示' : '核心のみ表示';
+  renderMarkers();
+  renderIndex();
+});
+
 function fixMapSize(){ map.invalidateSize(); }
 window.addEventListener('load', fixMapSize);
 window.addEventListener('resize', fixMapSize);
@@ -1222,6 +1237,11 @@ function makeIcon(){
   return L.divIcon({className:'leaflet-holmes-icon',
     html:'<svg viewBox="0 0 24 24" fill="none" stroke="#ece3cc" stroke-width="2.2"><circle cx="10" cy="10" r="6"/><line x1="15" y1="15" x2="21" y2="21"/></svg>',
     iconSize:[26,26], iconAnchor:[13,13]});
+}
+function makePeripheralIcon(){
+  return L.divIcon({className:'leaflet-holmes-icon-peripheral',
+    html:'<svg viewBox="0 0 24 24" fill="none" stroke="#ece3cc" stroke-width="2.2"><circle cx="10" cy="10" r="6"/><line x1="15" y1="15" x2="21" y2="21"/></svg>',
+    iconSize:[18,18], iconAnchor:[9,9]});
 }
 function makeSpecialIcon(){
   return L.divIcon({className:'leaflet-holmes-special-icon',
@@ -1234,6 +1254,7 @@ function makeJournalIcon(){
     iconSize:[24,24], iconAnchor:[12,12]});
 }
 let markers = {};
+let coreOnlyFilter = false;
 const markerClusterGroup = L.markerClusterGroup({
   maxClusterRadius: 55,
   disableClusteringAtZoom: 17,
@@ -1283,8 +1304,10 @@ function renderMarkers(){
   Object.keys(DATA).forEach(id=>{
     const e = DATA[id];
     if(e.type==='place' && e.coords){
+      if(coreOnlyFilter && e.relevance==='peripheral') return;
       const isSpecial = id === 'baker-street';
-      const m = L.marker(e.coords,{icon: isSpecial ? makeSpecialIcon() : makeIcon(), zIndexOffset: isSpecial ? 2000 : 0});
+      const icon = isSpecial ? makeSpecialIcon() : (e.relevance==='peripheral' ? makePeripheralIcon() : makeIcon());
+      const m = L.marker(e.coords,{icon, zIndexOffset: isSpecial ? 2000 : 0});
       m.entityName = e.name;
       m.on('click', ()=>showEntity(id));
       if(isSpecial){
@@ -1293,7 +1316,7 @@ function renderMarkers(){
         m.on('mouseout', ()=>{ m.getTooltip()?.getElement()?.classList.remove('force-show'); });
       } else if(isInUK(e.coords)){
         const ld = labelDirectionFor(id);
-        m.bindTooltip(e.name,{direction:ld.direction,offset:ld.offset,permanent:true,className:'place-label'});
+        m.bindTooltip(e.name,{direction:ld.direction,offset:ld.offset,permanent:true,className: e.relevance==='peripheral' ? 'place-label place-label-peripheral' : 'place-label'});
         m.on('mouseover', ()=>{ m.getTooltip()?.getElement()?.classList.add('force-show'); });
         m.on('mouseout', ()=>{ m.getTooltip()?.getElement()?.classList.remove('force-show'); });
       }
@@ -1340,6 +1363,8 @@ function renderIndex(){
     const e = DATA[id];
     if(e.type==='work'){
       (e.canon ? groups.work : groups['work-pastiche']).push(id);
+    } else if(e.type==='place'){
+      if(!coreOnlyFilter || e.relevance!=='peripheral') groups.place.push(id);
     } else {
       groups[e.type].push(id);
     }
@@ -1506,7 +1531,7 @@ function showEntity(id, opts={}){
   panelContent.innerHTML = `
     <div class="trail">${trailHtml}</div>
     <div class="panel-body">
-      <span class="type-badge badge-${entityClass(e)}">${entityLabel(e)}</span>
+      <span class="type-badge badge-${entityClass(e)}">${entityLabel(e)}</span>${e.relevance==='peripheral' ? ' <span class="type-badge badge-peripheral">周辺情報</span>' : ''}
       ${favBtnHtml}
       <h3>${e.name}</h3>
       ${mapJumpHtml}
