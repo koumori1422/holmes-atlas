@@ -142,6 +142,8 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .entity-desc.collapsed{display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;}
 .desc-link{background:none;border:none;padding:0;font:inherit;color:var(--brass);cursor:pointer;text-decoration:underline;text-decoration-color:var(--line);}
 .desc-link:hover{color:var(--burgundy);}
+.desc-link-ambiguous{background:none;border:none;padding:0;font:inherit;color:var(--slate);cursor:pointer;text-decoration:underline;text-decoration-style:dashed;text-decoration-color:var(--brass);}
+.desc-link-ambiguous:hover{color:var(--burgundy);}
 .related h4{font-weight:600;font-size:.83rem;color:var(--slate);margin:0 0 8px;border-top:1px solid var(--line);padding-top:14px;}
 .chip-row{display:flex;flex-wrap:wrap;gap:7px;}
 .chip-wrap{display:inline-flex;align-items:center;gap:3px;}
@@ -898,12 +900,11 @@ function escapeAttr(s){ return String(s).replace(/"/g,'&quot;'); }
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 // ---------- 説明文中の [[リンク]] 記法 ----------
-function resolveLinkToken(token){
-  if(DATA[token]) return token;
-  const exactId = Object.keys(DATA).find(id=>DATA[id].name === token);
-  if(exactId) return exactId;
-  const fuzzyId = Object.keys(DATA).find(id=>fuzzyMatch(DATA[id].name, token));
-  return fuzzyId || null;
+function findLinkCandidates(token){
+  if(DATA[token]) return [token]; // 明示的なID指定（曖昧さ解消済み）
+  const exactMatches = Object.keys(DATA).filter(id=>DATA[id].name === token);
+  if(exactMatches.length) return exactMatches;
+  return Object.keys(DATA).filter(id=>fuzzyMatch(DATA[id].name, token));
 }
 function parseDescSegments(desc){
   const regex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
@@ -912,26 +913,63 @@ function parseDescSegments(desc){
   while((m = regex.exec(desc)) !== null){
     if(m.index > lastIndex) segments.push({type:'text', content: desc.slice(lastIndex, m.index)});
     const token = m[1].trim();
-    const resolvedId = resolveLinkToken(token);
-    const display = m[2] ? m[2].trim() : (resolvedId ? DATA[resolvedId].name : token);
-    if(resolvedId) segments.push({type:'link', id: resolvedId, display});
+    const candidates = findLinkCandidates(token);
+    const display = m[2] ? m[2].trim() : (candidates.length===1 ? DATA[candidates[0]].name : token);
+    if(candidates.length === 1) segments.push({type:'link', id: candidates[0], display});
+    else if(candidates.length > 1) segments.push({type:'ambiguous', token, display, candidates});
     else segments.push({type:'text', content: display});
     lastIndex = regex.lastIndex;
   }
   if(lastIndex < desc.length) segments.push({type:'text', content: desc.slice(lastIndex)});
   return segments;
 }
+let ambiguousLinkRegistry = [];
 function segmentsToHtml(segments){
   return segments.map(seg=>{
     if(seg.type==='link') return `<button class="desc-link" data-id="${seg.id}">${escapeHtml(seg.display)}</button>`;
+    if(seg.type==='ambiguous'){
+      const idx = ambiguousLinkRegistry.length;
+      ambiguousLinkRegistry.push(seg);
+      return `<button class="desc-link-ambiguous" data-amb-idx="${idx}" title="候補が複数あります。クリックして選んでください">${escapeHtml(seg.display)}</button>`;
+    }
     return escapeHtml(seg.content);
   }).join('');
 }
 function renderDescBody(desc){
+  ambiguousLinkRegistry = [];
   return segmentsToHtml(parseDescSegments(desc));
 }
 function descVisibleLength(desc){
-  return parseDescSegments(desc).reduce((sum,s)=>sum+(s.type==='link'?s.display.length:s.content.length), 0);
+  return parseDescSegments(desc).reduce((sum,s)=>sum+(s.type==='link'||s.type==='ambiguous'?s.display.length:s.content.length), 0);
+}
+function escapeRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function openDisambiguateModal(entityId, token, candidates, displayText){
+  modalBody.innerHTML = `
+    <h3>どちらにリンクしますか？</h3>
+    <div class="modal-sub">説明文中の「${escapeHtml(token)}」に一致する項目が複数あります。選ぶと、次回から自動的にそちらへリンクされます。</div>
+    <div class="checklist" style="max-height:240px;">
+      ${candidates.map(cid=>`<button type="button" class="geo-result-item" data-cid="${cid}"><span class="dot dot-${entityClass(DATA[cid])}"></span> ${escapeHtml(DATA[cid].name)}　<span class="msi-sub">（${entityLabel(DATA[cid])}）</span></button>`).join('')}
+    </div>
+    <div class="modal-actions"><button class="modal-cancel" id="amb-cancel">キャンセル</button></div>`;
+  overlay.classList.add('open');
+  document.getElementById('amb-cancel').addEventListener('click', closeModal);
+  modalBody.querySelectorAll('[data-cid]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      closeModal();
+      await resolveAmbiguousLink(entityId, token, btn.dataset.cid, displayText);
+    });
+  });
+}
+async function resolveAmbiguousLink(entityId, token, chosenId, displayText){
+  const e = DATA[entityId];
+  const pattern = new RegExp('\\[\\[' + escapeRegExp(token) + '(\\|[^\\]]+)?\\]\\]');
+  const newDesc = e.desc.replace(pattern, `[[${chosenId}|${displayText}]]`);
+  overrides[entityId] = overrides[entityId] || {};
+  overrides[entityId].desc = newDesc;
+  await safeSet('p-overrides', overrides);
+  DATA = buildData();
+  showToast('リンク先を確定しました。');
+  showEntity(entityId, {fromTrail:true});
 }
 function fmtDate(ts){ return new Date(ts).toLocaleString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}); }
 function showToast(msg){
@@ -1502,6 +1540,12 @@ function showEntity(id, opts={}){
   });
   panelContent.querySelectorAll('.desc-link').forEach(btn=>{
     btn.addEventListener('click', ()=>showEntity(btn.dataset.id));
+  });
+  panelContent.querySelectorAll('.desc-link-ambiguous').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const seg = ambiguousLinkRegistry[parseInt(btn.dataset.ambIdx)];
+      openDisambiguateModal(id, seg.token, seg.candidates, seg.display);
+    });
   });
   document.getElementById('favToggleBtn')?.addEventListener('click', async ()=>{
     personalNotes[id] = personalNotes[id] || {};
