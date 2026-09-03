@@ -218,6 +218,10 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;}
 .modal-cancel{background:none;border:1px solid var(--line);color:var(--charcoal);padding:7px 16px;border-radius:3px;cursor:pointer;}
 .modal-submit{background:var(--brass);border:none;color:#fff;padding:7px 18px;border-radius:3px;cursor:pointer;}
+.danger-zone{margin-top:22px;padding-top:14px;border-top:1px dashed var(--burgundy);text-align:right;}
+.danger-delete-btn{background:none;border:1px solid var(--burgundy);color:var(--burgundy);padding:6px 16px;border-radius:3px;cursor:pointer;font-size:.82rem;}
+.danger-delete-btn:hover:not(:disabled){background:var(--burgundy);color:#fff;}
+.danger-delete-btn:disabled{opacity:.4;cursor:not-allowed;}
 
 .timeline{position:absolute;inset:0;background:var(--parchment);color:var(--charcoal);overflow-y:auto;display:none;padding:20px 26px 60px;}
 .timeline.open{display:block;}
@@ -881,6 +885,7 @@ function buildData(){
   const data = {};
   Object.keys(SEED).forEach(id=>{
     const base = SEED[id], ov = overrides[id] || {};
+    if(ov.deleted) return;
     data[id] = {
       type: base.type, name: ov.name || base.name, coords: ov.coords || base.coords || null,
       desc: ov.desc || base.desc, image: ov.image || base.image || null,
@@ -1792,7 +1797,10 @@ function openEditModal(targetId){
       <div class="hint">地図上のピンの大きさ・色や「核心のみ表示」フィルターに反映されます。</div>
     </div>` : ''}
     <div class="field"><label>関連付ける項目</label><div class="checklist">${relatedChecklist(targetId, e.related||[])}</div></div>
-    <div class="modal-actions"><button class="modal-cancel" id="f-cancel">キャンセル</button><button class="modal-submit" id="f-submit">保存する</button></div>`;
+    <div class="modal-actions"><button class="modal-cancel" id="f-cancel">キャンセル</button><button class="modal-submit" id="f-submit">保存する</button></div>
+    <div class="danger-zone">
+      <button class="danger-delete-btn" id="f-delete-open">この項目を削除する</button>
+    </div>`;
   overlay.classList.add('open');
   wireImageUpload('f-image-file','f-image-preview', d=>uploadedImageData=d);
   if(e.type==='place'){
@@ -1815,6 +1823,7 @@ function openEditModal(targetId){
     });
   }
   document.getElementById('f-cancel').addEventListener('click', closeModal);
+  document.getElementById('f-delete-open').addEventListener('click', ()=>openDeleteConfirmModal(targetId, e.name));
   document.getElementById('f-submit').addEventListener('click', async ()=>{
     const name = document.getElementById('f-name').value.trim();
     const desc = document.getElementById('f-desc').value.trim();
@@ -1887,6 +1896,48 @@ function openExportModal(){
   document.getElementById('export-csv-btn').addEventListener('click', ()=>{ exportAsCSV(); closeModal(); showToast('CSVファイルをダウンロードしました。'); });
 }
 document.getElementById('exportBtn').addEventListener('click', openExportModal);
+
+function openDeleteConfirmModal(targetId, entityName){
+  modalBody.innerHTML = `
+    <h3 style="color:var(--burgundy);">項目を削除しますか？</h3>
+    <div class="modal-sub">この操作は元に戻せません。本当に削除する場合は、下の欄に項目名を正確に入力してください。</div>
+    <div class="field">
+      <label>削除する項目：<strong>${escapeHtml(entityName)}</strong></label>
+      <input type="text" id="delete-confirm-input" placeholder="ここに項目名を入力">
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="delete-cancel">キャンセル</button>
+      <button class="danger-delete-btn" id="delete-confirm-btn" disabled>削除する</button>
+    </div>`;
+  overlay.classList.add('open');
+  const input = document.getElementById('delete-confirm-input');
+  const confirmBtn = document.getElementById('delete-confirm-btn');
+  input.addEventListener('input', ()=>{
+    confirmBtn.disabled = input.value.trim() !== entityName;
+  });
+  document.getElementById('delete-cancel').addEventListener('click', closeModal);
+  confirmBtn.addEventListener('click', async ()=>{
+    if(input.value.trim() !== entityName) return;
+    await deleteEntity(targetId);
+    closeModal();
+  });
+}
+async function deleteEntity(targetId){
+  if(additions[targetId]){
+    delete additions[targetId];
+    await safeSet('p-additions', additions);
+  } else {
+    overrides[targetId] = overrides[targetId] || {};
+    overrides[targetId].deleted = true;
+    await safeSet('p-overrides', overrides);
+  }
+  delete personalNotes[targetId];
+  await safeSet('p-notes', personalNotes);
+  DATA = buildData();
+  renderMarkers(); renderIndex();
+  panel.classList.remove('open');
+  showToast('項目を削除しました。');
+}
 
 function openAliasModal(){
   modalBody.innerHTML = `
