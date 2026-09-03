@@ -1351,7 +1351,7 @@ function renderIndex(){
 const panel = document.getElementById('panel');
 const panelContent = document.getElementById('panelContent');
 let trail = [];
-let savedMapView = null;
+let lastShownPlace = null;
 const pinIconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="9" r="2.6"/><path d="M12 21c-4-4-7-7.5-7-11a7 7 0 0 1 14 0c0 3.5-3 7-7 11z"/></svg>';
 
 function renderPhoto(photo, entityId){
@@ -1379,15 +1379,19 @@ function showEntity(id, opts={}){
   const e = DATA[id];
   if(!e) return;
   document.getElementById('timeline').classList.remove('open');
-  if(!panel.classList.contains('open')){
-    savedMapView = {center: map.getCenter(), zoom: map.getZoom()};
-  }
   if(!opts.fromTrail){ trail = trail.filter(t=>t!==id); trail.push(id); if(trail.length>6) trail.shift(); }
   document.querySelectorAll('.index-item').forEach(b=>b.classList.toggle('active', b.dataset.id===id));
   if(e.type==='place' && e.coords){
     const m0 = markers[id];
-    if(m0 && markerClusterGroup.hasLayer(m0)) markerClusterGroup.zoomToShowLayer(m0, ()=>{});
-    else flyToAvoidingPanel(e.coords, zoomForEntity(id));
+    const zoom = zoomForEntity(id);
+    if(m0 && markerClusterGroup.hasLayer(m0)){
+      markerClusterGroup.zoomToShowLayer(m0, ()=>{
+        lastShownPlace = {coords: e.coords, zoom: map.getZoom()};
+      });
+    } else {
+      flyToAvoidingPanel(e.coords, zoom);
+      lastShownPlace = {coords: e.coords, zoom};
+    }
   }
 
   const trailHtml = trail.map((tid,i)=>{
@@ -1473,9 +1477,9 @@ function showEntity(id, opts={}){
 }
 document.getElementById('panelClose').addEventListener('click', ()=>{
   panel.classList.remove('open');
-  if(savedMapView){
-    map.flyTo(savedMapView.center, savedMapView.zoom, {duration:0.6});
-    savedMapView = null;
+  if(lastShownPlace){
+    map.flyTo(lastShownPlace.coords, lastShownPlace.zoom, {duration:0.6});
+    lastShownPlace = null;
   }
 });
 
