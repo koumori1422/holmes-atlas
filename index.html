@@ -138,7 +138,10 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .photo-credit{font-size:.68rem;color:var(--slate);line-height:1.4;margin-top:3px;}
 .photo-credit a{color:var(--slate);}
 .panel-body p{font-size:.96rem;line-height:1.75;margin:0 0 18px;}
-.desc-toggle-btn{background:none;border:none;color:var(--brass);font-size:.8rem;cursor:pointer;padding:0;text-decoration:underline;text-decoration-color:var(--line);}
+.desc-toggle-btn{background:none;border:none;color:var(--brass);font-size:.8rem;cursor:pointer;padding:0;text-decoration:underline;text-decoration-color:var(--line);margin:-14px 0 18px;display:block;}
+.entity-desc.collapsed{display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;}
+.desc-link{background:none;border:none;padding:0;font:inherit;color:var(--brass);cursor:pointer;text-decoration:underline;text-decoration-color:var(--line);}
+.desc-link:hover{color:var(--burgundy);}
 .related h4{font-weight:600;font-size:.83rem;color:var(--slate);margin:0 0 8px;border-top:1px solid var(--line);padding-top:14px;}
 .chip-row{display:flex;flex-wrap:wrap;gap:7px;}
 .chip-wrap{display:inline-flex;align-items:center;gap:3px;}
@@ -307,7 +310,7 @@ const MAPTILER_HISTORIC_TILE_ID = 'uk-osgb10k1888';
 const SEED = {
   "baker-street": {type:"place", name:"221Bベーカー街", coords:[51.5237,-0.1585], image:null,
     photoNow:{url:"https://commons.wikimedia.org/wiki/Special:FilePath/Front_view_of_221B_Baker_Street.jpg", credit:"Kaartic", license:"CC BY-SA 4.0", sourceUrl:"https://commons.wikimedia.org/wiki/File:Front_view_of_221B_Baker_Street.jpg"},
-    desc:"ホームズとワトスンが1881年から共同生活を送った住居。ベーカー街自体は実在するが、221Bという番地は物語のために作られたもの。家主はハドスン夫人。",
+    desc:"[[ホームズ]]と[[ワトスン]]が1881年から共同生活を送った住居。ベーカー街自体は実在するが、221Bという番地は物語のために作られたもの。家主は[[ハドスン夫人]]。",
     related:["holmes","watson","mrs-hudson","study-in-scarlet"]},
   "st-barts": {type:"place", name:"セント・バーソロミュー病院", coords:[51.5174,-0.1012], image:null,
     photos:[{url:"https://commons.wikimedia.org/wiki/Special:FilePath/St_Bartholomew%27s_Hospital%2C_London%3B_The_Square._Photograph%2C_c_Wellcome_V0028932.jpg", year:"1890年頃", credit:"Wellcome Collection", license:"CC BY 4.0", sourceUrl:"https://commons.wikimedia.org/wiki/File:St_Bartholomew%27s_Hospital%2C_London%3B_The_Square._Photograph%2C_c_Wellcome_V0028932.jpg"},{url:"https://commons.wikimedia.org/wiki/Special:FilePath/St_Bartholomew%27s_Hospital%2C_London%3B_Smithfield_Gate._Photogra_Wellcome_V0028931.jpg", year:"1890年頃", credit:"Wellcome Collection", license:"CC BY 4.0", sourceUrl:"https://commons.wikimedia.org/wiki/File:St_Bartholomew%27s_Hospital%2C_London%3B_Smithfield_Gate._Photogra_Wellcome_V0028931.jpg"},{url:"https://commons.wikimedia.org/wiki/Special:FilePath/St_Bartholomew%27s_Hospital%2C_London_-_03.jpg", year:"2011年", credit:"Luca Borghi", license:"CC BY-SA 4.0", sourceUrl:"https://commons.wikimedia.org/wiki/File:St_Bartholomew%27s_Hospital%2C_London_-_03.jpg"}],
@@ -436,7 +439,7 @@ const SEED = {
     desc:"シャーロック・ホームズの生みの親であるスコットランド出身の作家（1859〜1930）。",
     related:["edinburgh","holmes","canon-term","crowborough"]},
   "holmes": {type:"person", name:"シャーロック・ホームズ", image:null,
-    desc:"鋭い観察眼と演繹的推理によって数々の難事件を解決する私立探偵。ベーカー街221Bに住み、ワトスンを相棒とする。",
+    desc:"鋭い観察眼と演繹的推理によって数々の難事件を解決する私立探偵。[[221Bベーカー街|ベーカー街221B]]に住み、[[ワトスン]]を相棒とする。",
     related:["baker-street","st-barts","watson","moriarty","mrs-hudson","study-in-scarlet","hound-baskervilles","final-problem","seven-percent-solution","herlock-sholmes","beekeepers-apprentice","sign-of-four","musgrave-ritual","mycroft-holmes","montague-street","sherlock-holmes-pub","lyceum-theatre","baker-street-station","irene-adler","scandal-in-bohemia","st-johns-wood-briony-lodge","piccadilly-circus"]},
   "watson": {type:"person", name:"ジョン・H・ワトスン医師", image:null,
     desc:"アフガン戦争帰りの軍医。ホームズの相棒として多くの事件に同行し、その記録者として物語の語り手を務める。",
@@ -893,6 +896,43 @@ let DATA = {};
 
 function escapeAttr(s){ return String(s).replace(/"/g,'&quot;'); }
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ---------- 説明文中の [[リンク]] 記法 ----------
+function resolveLinkToken(token){
+  if(DATA[token]) return token;
+  const exactId = Object.keys(DATA).find(id=>DATA[id].name === token);
+  if(exactId) return exactId;
+  const fuzzyId = Object.keys(DATA).find(id=>fuzzyMatch(DATA[id].name, token));
+  return fuzzyId || null;
+}
+function parseDescSegments(desc){
+  const regex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+  const segments = [];
+  let lastIndex = 0, m;
+  while((m = regex.exec(desc)) !== null){
+    if(m.index > lastIndex) segments.push({type:'text', content: desc.slice(lastIndex, m.index)});
+    const token = m[1].trim();
+    const resolvedId = resolveLinkToken(token);
+    const display = m[2] ? m[2].trim() : (resolvedId ? DATA[resolvedId].name : token);
+    if(resolvedId) segments.push({type:'link', id: resolvedId, display});
+    else segments.push({type:'text', content: display});
+    lastIndex = regex.lastIndex;
+  }
+  if(lastIndex < desc.length) segments.push({type:'text', content: desc.slice(lastIndex)});
+  return segments;
+}
+function segmentsToHtml(segments){
+  return segments.map(seg=>{
+    if(seg.type==='link') return `<button class="desc-link" data-id="${seg.id}">${escapeHtml(seg.display)}</button>`;
+    return escapeHtml(seg.content);
+  }).join('');
+}
+function renderDescBody(desc){
+  return segmentsToHtml(parseDescSegments(desc));
+}
+function descVisibleLength(desc){
+  return parseDescSegments(desc).reduce((sum,s)=>sum+(s.type==='link'?s.display.length:s.content.length), 0);
+}
 function fmtDate(ts){ return new Date(ts).toLocaleString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}); }
 function showToast(msg){
   const t = document.getElementById('toast');
@@ -1420,9 +1460,10 @@ function showEntity(id, opts={}){
   const isFav = !!(personalNotes[id] && personalNotes[id].favorite);
   const favBtnHtml = `<button class="fav-toggle-btn ${isFav?'active':''}" id="favToggleBtn">${isFav?'★':'☆'} お気に入り</button>`;
   const DESC_LIMIT = 500;
-  const descHtml = e.desc.length > DESC_LIMIT
-    ? `<p class="entity-desc">${e.desc.slice(0, DESC_LIMIT)}…<span class="desc-full" style="display:none;">${e.desc.slice(DESC_LIMIT)}</span> <button class="desc-toggle-btn" id="descToggleBtn">表示</button></p>`
-    : `<p class="entity-desc">${e.desc}</p>`;
+  const descBodyHtml = renderDescBody(e.desc);
+  const descHtml = descVisibleLength(e.desc) > DESC_LIMIT
+    ? `<p class="entity-desc collapsed" id="entityDescP">${descBodyHtml}</p><button class="desc-toggle-btn" id="descToggleBtn">続きを表示</button>`
+    : `<p class="entity-desc">${descBodyHtml}</p>`;
 
   panelContent.innerHTML = `
     <div class="trail">${trailHtml}</div>
@@ -1455,11 +1496,12 @@ function showEntity(id, opts={}){
   document.getElementById('mapJumpBtn')?.addEventListener('click', ()=>goToMap(id));
   document.getElementById('editBtn').addEventListener('click', ()=>openEditModal(id));
   document.getElementById('descToggleBtn')?.addEventListener('click', (ev)=>{
-    const p = ev.target.closest('.entity-desc');
-    const fullSpan = p.querySelector('.desc-full');
-    const expanded = fullSpan.style.display !== 'none';
-    fullSpan.style.display = expanded ? 'none' : 'inline';
-    ev.target.textContent = expanded ? '表示' : '畳む';
+    const p = document.getElementById('entityDescP');
+    p.classList.toggle('collapsed');
+    ev.target.textContent = p.classList.contains('collapsed') ? '続きを表示' : '畳む';
+  });
+  panelContent.querySelectorAll('.desc-link').forEach(btn=>{
+    btn.addEventListener('click', ()=>showEntity(btn.dataset.id));
   });
   document.getElementById('favToggleBtn')?.addEventListener('click', async ()=>{
     personalNotes[id] = personalNotes[id] || {};
@@ -1574,7 +1616,7 @@ function openEntityModal(prefill){
       <label>正典 / 正典外</label>
       <select id="f-canon"><option value="true">正典（コナン・ドイルの原作）</option><option value="false">正典外（パスティーシュ・映像化・翻案など）</option></select>
     </div>
-    <div class="field"><label>説明文</label><textarea id="f-desc"></textarea></div>
+    <div class="field"><label>説明文</label><textarea id="f-desc"></textarea><div class="hint">他の項目名を <code>[[ホームズ]]</code> のように二重角括弧で囲むと、自動でリンクになります（表示を変えたい場合は <code>[[holmes|彼]]</code> のように｜で区切って指定）。</div></div>
     <div class="field"><label>画像（任意）</label>
       <input type="file" class="file-input" id="f-image-file" accept="image/*">
       <input type="text" id="f-image" placeholder="https://..." style="margin-top:6px;">
@@ -1648,7 +1690,7 @@ function openEditModal(targetId){
     <h3>編集する — ${e.name}</h3>
     <div class="modal-sub">保存するとその場で反映されます。</div>
     <div class="field"><label>名称</label><input type="text" id="f-name" value="${escapeAttr(e.name)}"></div>
-    <div class="field"><label>説明文</label><textarea id="f-desc">${escapeHtml(e.desc)}</textarea></div>
+    <div class="field"><label>新しい説明文</label><textarea id="f-desc">${escapeHtml(e.desc)}</textarea><div class="hint">他の項目名を <code>[[ホームズ]]</code> のように二重角括弧で囲むと、自動でリンクになります。</div></div>
     <div class="field"><label>画像（任意）</label>
       <input type="file" class="file-input" id="f-image-file" accept="image/*">
       <input type="text" id="f-image" value="${e.image && !e.image.startsWith('data:') ? escapeAttr(e.image):''}" placeholder="https://...">
