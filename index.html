@@ -1680,6 +1680,11 @@ function openEntityModal(prefill){
       <div class="geo-row"><input type="text" id="f-geo-query" placeholder="地名で検索"><button type="button" class="geo-search-btn" id="f-geo-search">検索</button></div>
       <div class="geo-results" id="f-geo-results"></div>
       <div class="latlng-row"><input type="text" id="f-lat" placeholder="緯度" value="${prefill?prefill.lat.toFixed(4):''}"><input type="text" id="f-lng" placeholder="経度" value="${prefill?prefill.lng.toFixed(4):''}"></div>
+      <div class="hint">関連度</div>
+      <select id="f-relevance">
+        <option value="core">核心（正典・パスティーシュに直結する場所）</option>
+        <option value="peripheral">周辺情報（伝記的・ファン向けなど）</option>
+      </select>
     </div>
     <div class="field" id="f-canon-field" style="display:none;">
       <label>正典 / 正典外</label>
@@ -1729,14 +1734,16 @@ function openEntityModal(prefill){
     if(!name || !desc){ showToast('名称と説明文は必須です。'); return; }
     const type = typeSelect.value;
     let coords = null;
+    let relevance = 'core';
     if(type==='place'){
       const lat = parseFloat(document.getElementById('f-lat').value), lng = parseFloat(document.getElementById('f-lng').value);
       if(!isNaN(lat) && !isNaN(lng)) coords=[lat,lng];
+      relevance = document.getElementById('f-relevance').value;
     }
     const related = Array.from(modalBody.querySelectorAll('.checklist input:checked')).map(cb=>cb.value);
     const canon = type==='work' ? (document.getElementById('f-canon').value === 'true') : undefined;
     const newId = 'u-'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-    additions[newId] = {type, name, desc, image: uploadedImageData || document.getElementById('f-image').value.trim() || null, coords, canon, related};
+    additions[newId] = {type, name, desc, image: uploadedImageData || document.getElementById('f-image').value.trim() || null, coords, canon, relevance, related};
     await safeSet('p-additions', additions);
     related.forEach(relId=>{
       overrides[relId] = overrides[relId] || {};
@@ -1771,6 +1778,14 @@ function openEditModal(targetId){
       <div class="geo-row"><input type="text" id="f-geo-query" placeholder="場所名で再検索"><button type="button" class="geo-search-btn" id="f-geo-search">検索</button></div>
       <div class="geo-results" id="f-geo-results"></div>
       <div class="latlng-row"><input type="text" id="f-lat" value="${e.coords?e.coords[0]:''}"><input type="text" id="f-lng" value="${e.coords?e.coords[1]:''}"></div>
+    </div>
+    <div class="field">
+      <label>関連度</label>
+      <select id="f-relevance">
+        <option value="core" ${e.relevance!=='peripheral'?'selected':''}>核心（正典・パスティーシュに直結する場所）</option>
+        <option value="peripheral" ${e.relevance==='peripheral'?'selected':''}>周辺情報（伝記的・ファン向けなど）</option>
+      </select>
+      <div class="hint">地図上のピンの大きさ・色や「核心のみ表示」フィルターに反映されます。</div>
     </div>` : ''}
     <div class="field"><label>関連付ける項目</label><div class="checklist">${relatedChecklist(targetId, e.related||[])}</div></div>
     <div class="modal-actions"><button class="modal-cancel" id="f-cancel">キャンセル</button><button class="modal-submit" id="f-submit">保存する</button></div>`;
@@ -1808,6 +1823,7 @@ function openEditModal(targetId){
     if(e.type==='place'){
       const lat = parseFloat(document.getElementById('f-lat').value), lng = parseFloat(document.getElementById('f-lng').value);
       if(!isNaN(lat) && !isNaN(lng)) overrides[targetId].coords = [lat,lng];
+      overrides[targetId].relevance = document.getElementById('f-relevance').value;
     }
     const related = Array.from(modalBody.querySelectorAll('.checklist input:checked')).map(cb=>cb.value);
     overrides[targetId].extraRelated = related;
