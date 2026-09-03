@@ -112,6 +112,8 @@ button,input,select,textarea{font-family:'Crimson Pro',serif;}
 .hide-place-labels .place-label.force-show{display:block!important;}
 .leaflet-tooltip.force-show{z-index:650!important;}
 .leaflet-tooltip.spiderfied-hide{display:none!important;}
+.map-area-label{background:none!important;border:none!important;box-shadow:none!important;padding:0!important;color:#3a2e1e!important;font-family:'Playfair Display',serif;font-weight:600;font-size:.82rem;letter-spacing:.03em;text-shadow:-1px -1px 0 #ece3cc,1px -1px 0 #ece3cc,-1px 1px 0 #ece3cc,1px 1px 0 #ece3cc,0 0 6px #ece3cc;pointer-events:none!important;}
+.map-area-label::before{display:none!important;}
 
 .panel{position:absolute;top:0;right:0;bottom:0;width:min(640px,92%);background:var(--parchment);color:var(--charcoal);transform:translateX(100%);transition:transform .28s ease;overflow-y:auto;border-left:3px solid var(--brass);box-shadow:-6px 0 18px rgba(0,0,0,.35);}
 .panel.open{transform:translateX(0);}
@@ -1280,6 +1282,35 @@ function makeJournalIcon(){
 }
 let markers = {};
 let coreOnlyFilter = false;
+
+// ---------- 主要な通り・エリアの日本語ラベル（独自データ、地図タイルには依存しない） ----------
+const MAP_LABELS = [
+  {name:"ベーカー街", coords:[51.5225,-0.1570]},
+  {name:"リージェンツ・パーク", coords:[51.5313,-0.1570]},
+  {name:"ピカデリー・サーカス", coords:[51.5100,-0.1341]},
+  {name:"ピカデリー", coords:[51.5072,-0.1434]},
+  {name:"オックスフォード・ストリート", coords:[51.5152,-0.1447]},
+  {name:"リージェント・ストリート", coords:[51.5100,-0.1401]},
+  {name:"ペル・メル街", coords:[51.5057,-0.1339]},
+  {name:"ホワイトホール", coords:[51.5030,-0.1268]},
+  {name:"ストランド", coords:[51.5113,-0.1200]},
+  {name:"コヴェント・ガーデン", coords:[51.5117,-0.1240]},
+  {name:"トラファルガー広場", coords:[51.5080,-0.1281]},
+  {name:"ハイド・パーク", coords:[51.5073,-0.1657]},
+  {name:"ウェストミンスター", coords:[51.4995,-0.1348]},
+  {name:"セント・ジェームズ・パーク", coords:[51.5027,-0.1347]},
+  {name:"メリルボーン", coords:[51.5185,-0.1540]},
+  {name:"ソーホー", coords:[51.5137,-0.1315]},
+  {name:"フリート・ストリート", coords:[51.5142,-0.1082]},
+  {name:"シティ・オブ・ロンドン", coords:[51.5155,-0.0922]},
+];
+function renderMapLabels(){
+  MAP_LABELS.forEach(l=>{
+    L.tooltip({permanent:true, direction:'center', className:'map-area-label', interactive:false})
+      .setLatLng(l.coords).setContent(l.name).addTo(map);
+  });
+}
+
 const markerClusterGroup = L.markerClusterGroup({
   maxClusterRadius: 55,
   disableClusteringAtZoom: 17,
@@ -2376,6 +2407,7 @@ document.addEventListener('click', (ev)=>{ if(!ev.target.closest('.action-btns')
   DATA = buildData();
   renderMarkers();
   renderJournalMarkers();
+  renderMapLabels();
   renderIndex();
 })();
 </script>
